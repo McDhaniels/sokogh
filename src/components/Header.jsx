@@ -1,9 +1,17 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X, LogOut } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/");
+  }
 
   return (
     <header
@@ -21,10 +29,22 @@ export default function Header() {
           <Link to="/category" className="hover:text-[var(--text)] transition-colors">Categories</Link>
           <Link to="/info?tab=safety" className="hover:text-[var(--text)] transition-colors">Safety Tips</Link>
           <Link to="/info" className="hover:text-[var(--text)] transition-colors">How It Works</Link>
+          {user && <Link to="/my-listings" className="hover:text-[var(--text)] transition-colors">My Listings</Link>}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link to="/auth" className="font-body text-sm" style={{ color: "var(--muted)" }}>Sign in</Link>
+          {user ? (
+            <>
+              <span className="max-w-[140px] truncate text-sm" style={{ color: "var(--muted)" }}>
+                {user.user_metadata?.full_name || user.email}
+              </span>
+              <button onClick={handleSignOut} className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}>
+                <LogOut size={14} /> Sign out
+              </button>
+            </>
+          ) : (
+            <Link to="/auth" className="font-body text-sm" style={{ color: "var(--muted)" }}>Sign in</Link>
+          )}
           <Link
             to="/post-ad"
             className="rounded-full px-5 py-2.5 font-display text-sm font-semibold transition-transform hover:-translate-y-0.5"
@@ -45,6 +65,14 @@ export default function Header() {
           <Link to="/category" onClick={() => setMenuOpen(false)}>Categories</Link>
           <Link to="/info?tab=safety" onClick={() => setMenuOpen(false)}>Safety Tips</Link>
           <Link to="/info" onClick={() => setMenuOpen(false)}>How It Works</Link>
+          {user ? (
+            <>
+              <Link to="/my-listings" onClick={() => setMenuOpen(false)}>My Listings</Link>
+              <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="text-left">Sign out</button>
+            </>
+          ) : (
+            <Link to="/auth" onClick={() => setMenuOpen(false)}>Sign in</Link>
+          )}
           <Link
             to="/post-ad"
             onClick={() => setMenuOpen(false)}
