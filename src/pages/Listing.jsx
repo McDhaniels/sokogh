@@ -89,9 +89,9 @@ export default function Listing() {
                   <p className="flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}><Star size={12} fill="var(--gold)" style={{ color: "var(--gold)" }} /> 4.8 · Member since 2024</p>
                 </div>
               </div>
-              <button className="cta-btn mt-4 flex w-full items-center justify-center gap-2 rounded-full py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+              <Link to="/messages" className="cta-btn mt-4 flex w-full items-center justify-center gap-2 rounded-full py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
                 <MessageCircle size={16} /> Message seller
-              </button>
+              </Link>
               <button className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border py-2.5 text-sm" style={{ borderColor: "rgba(245,240,232,0.15)", color: "var(--muted)" }} onClick={() => setRevealed(true)}>
                 {revealed ? "024 123 4567" : "Reveal phone number"}
               </button>

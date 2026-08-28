@@ -19,8 +19,8 @@ export default function Header() {
         <nav className="hidden items-center gap-8 font-body text-sm md:flex" style={{ color: "var(--muted)" }}>
           <Link to="/category" className="hover:text-[var(--text)] transition-colors">Browse</Link>
           <Link to="/category" className="hover:text-[var(--text)] transition-colors">Categories</Link>
-          <a href="#" className="hover:text-[var(--text)] transition-colors">Safety Tips</a>
-          <a href="#" className="hover:text-[var(--text)] transition-colors">How It Works</a>
+          <Link to="/info?tab=safety" className="hover:text-[var(--text)] transition-colors">Safety Tips</Link>
+          <Link to="/info" className="hover:text-[var(--text)] transition-colors">How It Works</Link>
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -43,8 +43,8 @@ export default function Header() {
         <div className="flex flex-col gap-4 border-t px-5 py-4 font-body text-sm md:hidden" style={{ borderColor: "rgba(245,240,232,0.08)", color: "var(--muted)" }}>
           <Link to="/category" onClick={() => setMenuOpen(false)}>Browse</Link>
           <Link to="/category" onClick={() => setMenuOpen(false)}>Categories</Link>
-          <a href="#">Safety Tips</a>
-          <a href="#">How It Works</a>
+          <Link to="/info?tab=safety" onClick={() => setMenuOpen(false)}>Safety Tips</Link>
+          <Link to="/info" onClick={() => setMenuOpen(false)}>How It Works</Link>
           <Link
             to="/post-ad"
             onClick={() => setMenuOpen(false)}

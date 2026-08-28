@@ -4,6 +4,10 @@ import Category from "./pages/Category.jsx";
 import Listing from "./pages/Listing.jsx";
 import Auth from "./pages/Auth.jsx";
 import PostAd from "./pages/PostAd.jsx";
+import Messages from "./pages/Messages.jsx";
+import MyListings from "./pages/MyListings.jsx";
+import AdminReview from "./pages/AdminReview.jsx";
+import Info from "./pages/Info.jsx";
 
 export default function App() {
   return (
@@ -13,6 +17,10 @@ export default function App() {
       <Route path="/listing" element={<Listing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/post-ad" element={<PostAd />} />
+      <Route path="/messages" element={<Messages />} />
+      <Route path="/my-listings" element={<MyListings />} />
+      <Route path="/admin" element={<AdminReview />} />
+      <Route path="/info" element={<Info />} />
     </Routes>
   );
 }
