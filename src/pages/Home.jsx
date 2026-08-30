@@ -158,7 +158,7 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-5 pb-16">
         <div className="flex items-center justify-between rounded-2xl border border-dashed px-6 py-8 font-body text-sm" style={{ borderColor: "rgba(245,240,232,0.18)", color: "var(--muted)" }}>
-          <span>Advertisement space — banner rotates here</span>
+          <span>Sponsored — banner rotates here</span>
           <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--surface-2)" }}>728×90</span>
         </div>
       </section>
