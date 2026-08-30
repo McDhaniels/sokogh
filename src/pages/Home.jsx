@@ -142,9 +142,13 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {listings.map((item, i) => (
               <Link to={`/listing/${item.id}`} key={item.id} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-                <div className={`flex h-32 items-center justify-center bg-gradient-to-br ${HUES[i % HUES.length]}`}>
-                  <span className="font-body text-xs" style={{ color: "var(--muted)" }}>Photo</span>
-                </div>
+                {item.photos?.[0] ? (
+                  <img src={item.photos[0]} alt={item.title} className="h-32 w-full object-cover" />
+                ) : (
+                  <div className={`flex h-32 items-center justify-center bg-gradient-to-br ${HUES[i % HUES.length]}`}>
+                    <span className="font-body text-xs" style={{ color: "var(--muted)" }}>No photo</span>
+                  </div>
+                )}
                 <div className="p-4">
                   <h3 className="font-display text-sm font-medium leading-snug">{item.title}</h3>
                   <p className="mt-2 font-display text-base font-semibold" style={{ color: "var(--gold)" }}>GH₵ {Number(item.price).toLocaleString()}</p>

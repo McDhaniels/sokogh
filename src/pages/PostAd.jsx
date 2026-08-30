@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Camera, Smartphone, Car, Shirt, Home as HomeIcon, Briefcase, Sofa, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Camera, X, Smartphone, Car, Shirt, Home as HomeIcon, Briefcase, Sofa, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { createListing } from "../lib/listings.js";
+import { uploadImages } from "../lib/cloudinary.js";
 
 const STEPS = ["Category", "Details", "Photos", "Contact"];
+const MAX_PHOTOS = 4;
 
 const CATEGORIES = [
   { name: "Electronics", icon: Smartphone },
@@ -25,14 +27,33 @@ export default function PostAd() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [photos, setPhotos] = useState([true, false, false, false]);
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
   const [contactMethod, setContactMethod] = useState("Chat on SokoGH");
   const [submitting, setSubmitting] = useState(false);
+  const [submitLabel, setSubmitLabel] = useState("Submit ad");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
   }, [loading, user, navigate]);
+
+  useEffect(() => {
+    return () => photoPreviews.forEach((url) => URL.revokeObjectURL(url));
+  }, [photoPreviews]);
+
+  function handleAddPhotos(e) {
+    const files = Array.from(e.target.files || []).slice(0, MAX_PHOTOS - photoFiles.length);
+    if (files.length === 0) return;
+    setPhotoFiles((prev) => [...prev, ...files]);
+    setPhotoPreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
+  }
+
+  function removePhoto(index) {
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+  }
 
   const canAdvance =
     (step === 0 && category) ||
@@ -44,13 +65,19 @@ export default function PostAd() {
     setError("");
     setSubmitting(true);
     try {
+      let photoUrls = [];
+      if (photoFiles.length > 0) {
+        setSubmitLabel("Uploading photos…");
+        photoUrls = await uploadImages(photoFiles);
+      }
+      setSubmitLabel("Posting…");
       const id = await createListing({
         title,
         price,
         description,
         category,
         location,
-        photosCount: photos.filter(Boolean).length,
+        photos: photoUrls,
         contactMethod,
         sellerId: user.uid,
         sellerName: user.displayName || user.email,
@@ -59,6 +86,7 @@ export default function PostAd() {
     } catch (err) {
       setError("Couldn't post your ad right now. Please try again.");
       setSubmitting(false);
+      setSubmitLabel("Submit ad");
     }
   }
 
@@ -148,14 +176,30 @@ export default function PostAd() {
           <div>
             <h2 className="mb-1 font-display text-lg font-semibold">Add photos</h2>
             <p className="mb-4 text-sm" style={{ color: "var(--muted)" }}>
-              Real photo upload is coming in the next step — for now, just mark how many you'd add.
+              Listings with clear photos get far more messages. Add up to {MAX_PHOTOS}.
             </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {photos.map((filled, i) => (
-                <button key={i} className="photo-slot flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed" style={{ borderColor: filled ? "var(--gold)" : "rgba(245,240,232,0.15)", background: filled ? "rgba(212,165,68,0.08)" : "var(--surface)" }} onClick={() => setPhotos((p) => p.map((v, idx) => (idx === i ? !v : v)))}>
-                  {filled ? (<><Camera size={20} style={{ color: "var(--gold)" }} /><span className="text-xs" style={{ color: "var(--gold)" }}>Added</span></>) : (<><Camera size={20} style={{ color: "var(--muted)" }} /><span className="text-xs" style={{ color: "var(--muted)" }}>Add photo</span></>)}
-                </button>
+              {photoPreviews.map((url, i) => (
+                <div key={url} className="group relative aspect-square overflow-hidden rounded-2xl border-2" style={{ borderColor: "var(--gold)" }}>
+                  <img src={url} alt={`Upload ${i + 1}`} className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removePhoto(i)}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full"
+                    style={{ background: "rgba(15,14,12,0.75)", color: "var(--text)" }}
+                    aria-label="Remove photo"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
               ))}
+              {photoFiles.length < MAX_PHOTOS && (
+                <label className="photo-slot flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed" style={{ borderColor: "rgba(245,240,232,0.15)", background: "var(--surface)" }}>
+                  <Camera size={20} style={{ color: "var(--muted)" }} />
+                  <span className="text-xs" style={{ color: "var(--muted)" }}>Add photo</span>
+                  <input type="file" accept="image/*" multiple onChange={handleAddPhotos} className="hidden" />
+                </label>
+              )}
             </div>
           </div>
         )}
@@ -187,7 +231,7 @@ export default function PostAd() {
           {step === STEPS.length - 1 ? (
             <button disabled={submitting} onClick={handleSubmit} className="primary-btn flex items-center gap-2 rounded-full px-8 py-3 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
               {submitting && <Loader2 size={16} className="animate-spin" />}
-              {submitting ? "Posting…" : "Submit ad"}
+              {submitting ? submitLabel : "Submit ad"}
             </button>
           ) : (
             <button disabled={!canAdvance} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} className="primary-btn rounded-full px-8 py-3 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
