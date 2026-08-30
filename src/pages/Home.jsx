@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Search, MapPin, ShieldCheck, ChevronRight, Smartphone, Car, Shirt,
-  Home as HomeIcon, Briefcase, Sofa, BadgeCheck, MessageCircle,
+  Home as HomeIcon, Briefcase, Sofa, MessageCircle, Loader2,
 } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
+import { getRecentListings } from "../lib/listings.js";
 
 const TICKER_ITEMS = [
   "New listing: iPhone 13 Pro — Kumasi · 2 min ago",
@@ -17,23 +18,19 @@ const TICKER_ITEMS = [
 ];
 
 const CATEGORIES = [
-  { name: "Electronics", icon: Smartphone, count: "12,400" },
-  { name: "Vehicles", icon: Car, count: "6,120" },
-  { name: "Fashion", icon: Shirt, count: "18,900" },
-  { name: "Real Estate", icon: HomeIcon, count: "3,050" },
-  { name: "Services", icon: Briefcase, count: "5,600" },
-  { name: "Home & Furniture", icon: Sofa, count: "4,300" },
+  { name: "Electronics", icon: Smartphone },
+  { name: "Vehicles", icon: Car },
+  { name: "Fashion", icon: Shirt },
+  { name: "Real Estate", icon: HomeIcon },
+  { name: "Services", icon: Briefcase },
+  { name: "Home & Furniture", icon: Sofa },
 ];
 
-const LISTINGS = [
-  { title: "iPhone 13 Pro — 256GB", price: "GH₵ 4,200", location: "Kumasi", verified: true, hue: "from-amber-500/25 to-amber-900/10" },
-  { title: "Toyota Corolla 2016", price: "GH₵ 68,000", location: "Accra", verified: true, hue: "from-emerald-500/20 to-emerald-900/10" },
-  { title: "3-Bedroom Self-Contained", price: "GH₵ 2,500/mo", location: "East Legon", verified: false, hue: "from-stone-500/25 to-stone-900/10" },
-  { title: "Samsung 55\" Smart TV", price: "GH₵ 3,100", location: "Takoradi", verified: true, hue: "from-amber-500/20 to-stone-900/10" },
-  { title: "Ankara Fabric Bundle (6yd)", price: "GH₵ 180", location: "Kumasi", verified: false, hue: "from-emerald-500/15 to-amber-900/10" },
-  { title: "Freelance Graphic Design", price: "From GH₵ 150", location: "Tema", verified: true, hue: "from-stone-500/20 to-amber-900/10" },
-  { title: "Bedroom Furniture Set", price: "GH₵ 5,400", location: "Cape Coast", verified: false, hue: "from-amber-500/15 to-emerald-900/10" },
-  { title: "HP Laptop — Core i7", price: "GH₵ 3,800", location: "Accra", verified: true, hue: "from-emerald-500/20 to-stone-900/10" },
+const HUES = [
+  "from-amber-500/25 to-amber-900/10",
+  "from-emerald-500/20 to-emerald-900/10",
+  "from-stone-500/25 to-stone-900/10",
+  "from-amber-500/20 to-stone-900/10",
 ];
 
 function useCountUp(target, duration = 1400) {
@@ -56,12 +53,20 @@ function useCountUp(target, duration = 1400) {
 
 export default function Home() {
   const sellers = useCountUp(24700);
-  const listings = useCountUp(58200);
+  const listingsCount = useCountUp(58200);
   const regions = useCountUp(16);
+
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getRecentListings(8)
+      .then(setListings)
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen w-full">
-      {/* Live ticker */}
       <div className="w-full overflow-hidden border-b font-body text-xs tracking-wide" style={{ borderColor: "rgba(212,165,68,0.18)", background: "var(--surface)" }}>
         <div className="flex whitespace-nowrap py-2 ticker-track" style={{ width: "200%" }}>
           {[...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
@@ -75,7 +80,6 @@ export default function Home() {
 
       <Header />
 
-      {/* Hero */}
       <section className="mx-auto max-w-7xl px-5 pt-16 pb-14 text-center">
         <p className="rise-in mb-4 font-body text-xs uppercase tracking-[0.25em]" style={{ color: "var(--gold)" }}>
           Ghana's marketplace, one search away
@@ -99,7 +103,7 @@ export default function Home() {
         </div>
 
         <div className="rise-in mx-auto mt-10 flex max-w-xl items-center justify-center gap-10 font-body text-sm" style={{ color: "var(--muted)", animationDelay: "0.32s" }}>
-          <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{listings.toLocaleString()}+</div>active listings</div>
+          <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{listingsCount.toLocaleString()}+</div>active listings</div>
           <div className="h-8 w-px" style={{ background: "rgba(245,240,232,0.14)" }} />
           <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{sellers.toLocaleString()}+</div>sellers</div>
           <div className="h-8 w-px" style={{ background: "rgba(245,240,232,0.14)" }} />
@@ -107,49 +111,51 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
       <section className="mx-auto max-w-7xl px-5 pb-16">
         <div className="mb-5 flex items-end justify-between">
           <h2 className="font-display text-xl font-semibold">Browse categories</h2>
           <Link to="/category" className="flex items-center gap-1 font-body text-sm" style={{ color: "var(--gold)" }}>See all <ChevronRight size={16} /></Link>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-          {CATEGORIES.map(({ name, icon: Icon, count }) => (
-            <Link to="/category" key={name} className="cat-chip flex cursor-pointer flex-col items-center gap-2 rounded-2xl border px-4 py-6 text-center" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+          {CATEGORIES.map(({ name, icon: Icon }) => (
+            <Link to={`/category?cat=${encodeURIComponent(name)}`} key={name} className="cat-chip flex cursor-pointer flex-col items-center gap-2 rounded-2xl border px-4 py-6 text-center" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
               <Icon size={22} style={{ color: "var(--gold)" }} />
               <span className="font-display text-sm font-medium">{name}</span>
-              <span className="font-body text-xs" style={{ color: "var(--muted)" }}>{count} ads</span>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Listings */}
       <section className="mx-auto max-w-7xl px-5 pb-16">
         <div className="mb-5 flex items-end justify-between">
           <h2 className="font-display text-xl font-semibold">Trending near you</h2>
           <Link to="/category" className="flex items-center gap-1 font-body text-sm" style={{ color: "var(--gold)" }}>See all <ChevronRight size={16} /></Link>
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {LISTINGS.map((item, i) => (
-            <Link to="/listing" key={i} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-              <div className={`flex h-32 items-center justify-center bg-gradient-to-br ${item.hue}`}>
-                <span className="font-body text-xs" style={{ color: "var(--muted)" }}>Photo</span>
-              </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-display text-sm font-medium leading-snug">{item.title}</h3>
-                  {item.verified && <BadgeCheck size={16} style={{ color: "var(--gold)" }} />}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-16" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={20} /></div>
+        ) : listings.length === 0 ? (
+          <div className="rounded-2xl border border-dashed px-6 py-12 text-center text-sm" style={{ borderColor: "rgba(245,240,232,0.15)", color: "var(--muted)" }}>
+            No listings yet — be the first to <Link to="/post-ad" style={{ color: "var(--gold)" }}>post an ad</Link>.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {listings.map((item, i) => (
+              <Link to={`/listing/${item.id}`} key={item.id} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+                <div className={`flex h-32 items-center justify-center bg-gradient-to-br ${HUES[i % HUES.length]}`}>
+                  <span className="font-body text-xs" style={{ color: "var(--muted)" }}>Photo</span>
                 </div>
-                <p className="mt-2 font-display text-base font-semibold" style={{ color: "var(--gold)" }}>{item.price}</p>
-                <p className="mt-1 flex items-center gap-1 font-body text-xs" style={{ color: "var(--muted)" }}><MapPin size={12} /> {item.location}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+                <div className="p-4">
+                  <h3 className="font-display text-sm font-medium leading-snug">{item.title}</h3>
+                  <p className="mt-2 font-display text-base font-semibold" style={{ color: "var(--gold)" }}>GH₵ {Number(item.price).toLocaleString()}</p>
+                  <p className="mt-1 flex items-center gap-1 font-body text-xs" style={{ color: "var(--muted)" }}><MapPin size={12} /> {item.location}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Ad banner placeholder */}
       <section className="mx-auto max-w-7xl px-5 pb-16">
         <div className="flex items-center justify-between rounded-2xl border border-dashed px-6 py-8 font-body text-sm" style={{ borderColor: "rgba(245,240,232,0.18)", color: "var(--muted)" }}>
           <span>Advertisement space — banner rotates here</span>
@@ -157,7 +163,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Safety */}
       <section className="mx-auto max-w-7xl px-5 pb-20">
         <div className="flex flex-col gap-6 rounded-3xl border p-8 sm:flex-row sm:items-center" style={{ borderColor: "rgba(27,67,50,0.4)", background: "linear-gradient(135deg, rgba(27,67,50,0.35), rgba(15,14,12,0.2))" }}>
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl" style={{ background: "rgba(212,165,68,0.15)" }}>
@@ -170,9 +175,9 @@ export default function Home() {
               before you pay, and never send money to someone you haven't verified. Report anything that feels off.
             </p>
           </div>
-          <button className="flex shrink-0 items-center gap-2 rounded-full border px-5 py-2.5 font-display text-sm font-semibold sm:ml-auto" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>
+          <Link to="/info?tab=safety" className="flex shrink-0 items-center gap-2 rounded-full border px-5 py-2.5 font-display text-sm font-semibold sm:ml-auto" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>
             <MessageCircle size={16} /> Read safety tips
-          </button>
+          </Link>
         </div>
       </section>
 

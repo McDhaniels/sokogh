@@ -14,7 +14,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/category" element={<Category />} />
-      <Route path="/listing" element={<Listing />} />
+      <Route path="/listing/:id" element={<Listing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/post-ad" element={<PostAd />} />
       <Route path="/messages" element={<Messages />} />

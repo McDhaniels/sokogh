@@ -1,19 +1,15 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, MapPin, ChevronRight, BadgeCheck, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Search, MapPin, ChevronRight, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
+import { getListingsByCategory } from "../lib/listings.js";
 
-const LISTINGS = [
-  { title: "iPhone 13 Pro — 256GB", price: "GH₵ 4,200", location: "Kumasi", verified: true, hue: "from-amber-500/25 to-amber-900/10" },
-  { title: "iPhone 12 — 128GB", price: "GH₵ 2,900", location: "Accra", verified: true, hue: "from-emerald-500/20 to-emerald-900/10" },
-  { title: "Samsung Galaxy S22", price: "GH₵ 3,600", location: "Tema", verified: false, hue: "from-stone-500/25 to-stone-900/10" },
-  { title: "Samsung 55\" Smart TV", price: "GH₵ 3,100", location: "Takoradi", verified: true, hue: "from-amber-500/20 to-stone-900/10" },
-  { title: "HP Laptop — Core i7", price: "GH₵ 3,800", location: "Accra", verified: true, hue: "from-emerald-500/20 to-stone-900/10" },
-  { title: "Dell Laptop — Core i5", price: "GH₵ 2,600", location: "Kumasi", verified: false, hue: "from-amber-500/15 to-emerald-900/10" },
-  { title: "Sony Headphones WH-1000", price: "GH₵ 950", location: "Cape Coast", verified: true, hue: "from-stone-500/20 to-amber-900/10" },
-  { title: "PlayStation 5", price: "GH₵ 5,200", location: "Accra", verified: true, hue: "from-emerald-500/15 to-amber-900/10" },
-  { title: "iPad Air 5th Gen", price: "GH₵ 3,300", location: "Kumasi", verified: false, hue: "from-amber-500/25 to-amber-900/10" },
+const HUES = [
+  "from-amber-500/25 to-amber-900/10",
+  "from-emerald-500/20 to-emerald-900/10",
+  "from-stone-500/25 to-stone-900/10",
+  "from-amber-500/20 to-stone-900/10",
 ];
 
 const PRICE_RANGES = ["Any price", "Under GH₵ 500", "GH₵ 500 – 2,000", "GH₵ 2,000 – 5,000", "GH₵ 5,000+"];
@@ -44,7 +40,18 @@ function FilterGroup({ label, options }) {
 }
 
 export default function Category() {
+  const [searchParams] = useSearchParams();
+  const category = searchParams.get("cat") || "";
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    getListingsByCategory(category || null)
+      .then(setListings)
+      .finally(() => setLoading(false));
+  }, [category]);
 
   return (
     <div className="min-h-screen w-full font-body">
@@ -53,17 +60,17 @@ export default function Category() {
         <div className="mb-5 flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
           <Link to="/" style={{ color: "var(--muted)" }}>Home</Link>
           <ChevronRight size={12} />
-          <span style={{ color: "var(--text)" }}>Electronics</span>
+          <span style={{ color: "var(--text)" }}>{category || "All categories"}</span>
         </div>
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="font-display text-2xl font-semibold sm:text-3xl">Electronics</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>12,400 listings across Ghana</p>
+            <h1 className="font-display text-2xl font-semibold sm:text-3xl">{category || "All categories"}</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{listings.length} listing{listings.length === 1 ? "" : "s"}</p>
           </div>
           <div className="glow-focus flex items-center gap-2 rounded-full border p-2 pl-4 sm:w-80" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
             <Search size={16} style={{ color: "var(--muted)" }} />
-            <input type="text" placeholder="Search in Electronics…" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+            <input type="text" placeholder={`Search${category ? ` in ${category}` : ""}…`} className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
           </div>
         </div>
 
@@ -78,38 +85,33 @@ export default function Category() {
               <FilterGroup label="Price" options={PRICE_RANGES} />
               <FilterGroup label="Region" options={LOCATIONS} />
               <FilterGroup label="Condition" options={CONDITIONS} />
-              <button className="mt-4 w-full rounded-full py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>Apply filters</button>
+              <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>Filters are visual for now — real filtering comes in a later step.</p>
             </div>
           </aside>
 
           <div>
-            <div className="mb-4 flex items-center justify-between text-sm" style={{ color: "var(--muted)" }}>
-              <span>Showing {LISTINGS.length} of 12,400</span>
-              <div className="flex items-center gap-1">Sort: <span style={{ color: "var(--text)" }}>Newest first</span><ChevronDown size={14} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {LISTINGS.map((item, i) => (
-                <Link to="/listing" key={i} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-                  <div className={`flex h-32 items-center justify-center bg-gradient-to-br ${item.hue}`}>
-                    <span className="text-xs" style={{ color: "var(--muted)" }}>Photo</span>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-display text-sm font-medium leading-snug">{item.title}</h3>
-                      {item.verified && <BadgeCheck size={16} style={{ color: "var(--gold)" }} />}
+            {loading ? (
+              <div className="flex items-center justify-center py-16" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={20} /></div>
+            ) : listings.length === 0 ? (
+              <div className="rounded-2xl border border-dashed px-6 py-12 text-center text-sm" style={{ borderColor: "rgba(245,240,232,0.15)", color: "var(--muted)" }}>
+                No listings here yet — be the first to <Link to="/post-ad" style={{ color: "var(--gold)" }}>post an ad</Link>.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {listings.map((item, i) => (
+                  <Link to={`/listing/${item.id}`} key={item.id} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+                    <div className={`flex h-32 items-center justify-center bg-gradient-to-br ${HUES[i % HUES.length]}`}>
+                      <span className="text-xs" style={{ color: "var(--muted)" }}>Photo</span>
                     </div>
-                    <p className="mt-2 font-display text-base font-semibold" style={{ color: "var(--gold)" }}>{item.price}</p>
-                    <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}><MapPin size={12} /> {item.location}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-8 flex items-center justify-center gap-2 text-sm">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} className="flex h-9 w-9 items-center justify-center rounded-full font-display" style={n === 1 ? { background: "var(--gold)", color: "#0F0E0C" } : { color: "var(--muted)" }}>{n}</button>
-              ))}
-            </div>
+                    <div className="p-4">
+                      <h3 className="font-display text-sm font-medium leading-snug">{item.title}</h3>
+                      <p className="mt-2 font-display text-base font-semibold" style={{ color: "var(--gold)" }}>GH₵ {Number(item.price).toLocaleString()}</p>
+                      <p className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}><MapPin size={12} /> {item.location}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </main>

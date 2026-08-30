@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Check, Camera, Smartphone, Car, Shirt, Home as HomeIcon, Briefcase, Sofa } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Check, Camera, Smartphone, Car, Shirt, Home as HomeIcon, Briefcase, Sofa, Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
+import { createListing } from "../lib/listings.js";
 
 const STEPS = ["Category", "Details", "Photos", "Contact"];
 
@@ -14,14 +16,53 @@ const CATEGORIES = [
 ];
 
 export default function PostAd() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
   const [step, setStep] = useState(0);
   const [category, setCategory] = useState(null);
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const [photos, setPhotos] = useState([true, false, false, false]);
+  const [contactMethod, setContactMethod] = useState("Chat on SokoGH");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const canAdvance = (step === 0 && category) || (step === 1 && title && price) || step === 2 || step === 3;
+  useEffect(() => {
+    if (!loading && !user) navigate("/auth");
+  }, [loading, user, navigate]);
+
+  const canAdvance =
+    (step === 0 && category) ||
+    (step === 1 && title && price && location) ||
+    step === 2 ||
+    step === 3;
+
+  async function handleSubmit() {
+    setError("");
+    setSubmitting(true);
+    try {
+      const id = await createListing({
+        title,
+        price,
+        description,
+        category,
+        location,
+        photosCount: photos.filter(Boolean).length,
+        contactMethod,
+        sellerId: user.uid,
+        sellerName: user.displayName || user.email,
+      });
+      navigate(`/listing/${id}`);
+    } catch (err) {
+      setError("Couldn't post your ad right now. Please try again.");
+      setSubmitting(false);
+    }
+  }
+
+  if (loading || !user) return null;
 
   return (
     <div className="min-h-screen w-full font-body">
@@ -38,7 +79,7 @@ export default function PostAd() {
 
       <main className="mx-auto max-w-3xl px-5 py-10">
         <h1 className="mb-2 font-display text-2xl font-semibold sm:text-3xl">Post an ad</h1>
-        <p className="mb-8 text-sm" style={{ color: "var(--muted)" }}>Takes about 2 minutes. We'll review it before it goes live.</p>
+        <p className="mb-8 text-sm" style={{ color: "var(--muted)" }}>Takes about 2 minutes. Your ad goes live right away.</p>
 
         <div className="mb-10 flex items-center">
           {STEPS.map((label, i) => (
@@ -87,6 +128,13 @@ export default function PostAd() {
             </div>
 
             <div>
+              <label className="mb-2 block font-display text-sm font-medium">Location</label>
+              <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
+                <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Kumasi, Ashanti Region" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+              </div>
+            </div>
+
+            <div>
               <label className="mb-2 block font-display text-sm font-medium">Description</label>
               <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Condition, why you're selling, anything a buyer should know…" maxLength={500} rows={4} className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
@@ -99,7 +147,9 @@ export default function PostAd() {
         {step === 2 && (
           <div>
             <h2 className="mb-1 font-display text-lg font-semibold">Add photos</h2>
-            <p className="mb-4 text-sm" style={{ color: "var(--muted)" }}>Listings with clear photos get far more messages. Add at least one.</p>
+            <p className="mb-4 text-sm" style={{ color: "var(--muted)" }}>
+              Real photo upload is coming in the next step — for now, just mark how many you'd add.
+            </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {photos.map((filled, i) => (
                 <button key={i} className="photo-slot flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed" style={{ borderColor: filled ? "var(--gold)" : "rgba(245,240,232,0.15)", background: filled ? "rgba(212,165,68,0.08)" : "var(--surface)" }} onClick={() => setPhotos((p) => p.map((v, idx) => (idx === i ? !v : v)))}>
@@ -114,24 +164,36 @@ export default function PostAd() {
           <div>
             <h2 className="mb-4 font-display text-lg font-semibold">How should buyers reach you?</h2>
             <div className="flex flex-col gap-3">
-              {["Chat on SokoGH (recommended)", "WhatsApp", "Phone call"].map((opt, i) => (
+              {["Chat on SokoGH", "WhatsApp", "Phone call"].map((opt) => (
                 <label key={opt} className="field flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
                   <span className="text-sm">{opt}</span>
-                  <input type="checkbox" defaultChecked={i === 0} className="accent-[#D4A544]" />
+                  <input type="radio" name="contact" checked={contactMethod === opt} onChange={() => setContactMethod(opt)} className="accent-[#D4A544]" />
                 </label>
               ))}
             </div>
             <div className="mt-6 rounded-xl border p-4 text-xs" style={{ borderColor: "rgba(27,67,50,0.4)", background: "rgba(27,67,50,0.15)", color: "var(--muted)" }}>
-              Your exact phone number is hidden until a buyer taps "Reveal" — you're always in control of who can contact you.
+              Your exact phone number stays hidden until a buyer taps "Reveal" — you're always in control of who can contact you.
             </div>
+            {error && (
+              <div className="mt-4 rounded-xl border px-4 py-3 text-xs" style={{ borderColor: "rgba(200,80,80,0.4)", background: "rgba(200,80,80,0.1)", color: "#D97066" }}>
+                {error}
+              </div>
+            )}
           </div>
         )}
 
         <div className="mt-10 flex items-center justify-between">
           <button onClick={() => setStep((s) => Math.max(0, s - 1))} className="text-sm" style={{ color: "var(--muted)", visibility: step === 0 ? "hidden" : "visible" }}>Back</button>
-          <button disabled={!canAdvance} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} className="primary-btn rounded-full px-8 py-3 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
-            {step === STEPS.length - 1 ? "Submit for review" : "Continue"}
-          </button>
+          {step === STEPS.length - 1 ? (
+            <button disabled={submitting} onClick={handleSubmit} className="primary-btn flex items-center gap-2 rounded-full px-8 py-3 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+              {submitting && <Loader2 size={16} className="animate-spin" />}
+              {submitting ? "Posting…" : "Submit ad"}
+            </button>
+          ) : (
+            <button disabled={!canAdvance} onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))} className="primary-btn rounded-full px-8 py-3 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+              Continue
+            </button>
+          )}
         </div>
       </main>
     </div>
