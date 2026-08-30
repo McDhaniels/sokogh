@@ -1,41 +1,64 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../lib/supabaseClient.js";
+import {
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updateProfile,
+} from "firebase/auth";
+import { auth } from "../lib/firebaseClient.js";
 
 const AuthContext = createContext(null);
+
+const FRIENDLY_ERRORS = {
+  "auth/email-already-in-use": "That email already has an account. Try signing in instead.",
+  "auth/invalid-email": "That email address doesn't look right.",
+  "auth/weak-password": "Password should be at least 6 characters.",
+  "auth/invalid-credential": "Incorrect email or password.",
+  "auth/user-not-found": "No account found with that email.",
+  "auth/wrong-password": "Incorrect email or password.",
+  "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+};
+
+function friendlyError(err) {
+  return FRIENDLY_ERRORS[err?.code] || err?.message || "Something went wrong. Please try again.";
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
       setLoading(false);
     });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => listener.subscription.unsubscribe();
+    return unsubscribe;
   }, []);
 
-  async function signUp(email, password, fullName, phone) {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName, phone } },
-    });
-    return { data, error };
+  async function signUp(email, password, fullName) {
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      if (fullName) {
+        await updateProfile(cred.user, { displayName: fullName });
+      }
+      return { user: cred.user, error: null };
+    } catch (err) {
+      return { user: null, error: friendlyError(err) };
+    }
   }
 
   async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    return { data, error };
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      return { user: cred.user, error: null };
+    } catch (err) {
+      return { user: null, error: friendlyError(err) };
+    }
   }
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
   }
 
   return (

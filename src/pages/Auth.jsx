@@ -12,7 +12,6 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const { signUp, signIn } = useAuth();
@@ -21,7 +20,6 @@ export default function Auth() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    setInfo("");
 
     if (mode === "signup" && !agreed) {
       setError("Please agree to the terms to continue.");
@@ -29,23 +27,15 @@ export default function Auth() {
     }
 
     setSubmitting(true);
-    if (mode === "signin") {
-      const { error } = await signIn(email, password);
-      setSubmitting(false);
-      if (error) {
-        setError(error.message);
-      } else {
-        navigate("/");
-      }
+    const result = mode === "signin"
+      ? await signIn(email, password)
+      : await signUp(email, password, fullName);
+    setSubmitting(false);
+
+    if (result.error) {
+      setError(result.error);
     } else {
-      const { error } = await signUp(email, password, fullName, `+233${phone}`);
-      setSubmitting(false);
-      if (error) {
-        setError(error.message);
-      } else {
-        setInfo("Account created! Check your email to confirm it, then sign in.");
-        setMode("signin");
-      }
+      navigate("/");
     }
   }
 
@@ -63,7 +53,7 @@ export default function Auth() {
 
         <div className="relative mb-8 flex border-b" style={{ borderColor: "rgba(245,240,232,0.1)" }}>
           {["signin", "signup"].map((m) => (
-            <button key={m} type="button" onClick={() => { setMode(m); setError(""); setInfo(""); }} className="tab-btn flex-1 pb-3 text-center font-display text-sm font-semibold" style={{ color: mode === m ? "var(--text)" : "var(--muted)" }}>
+            <button key={m} type="button" onClick={() => { setMode(m); setError(""); }} className="tab-btn flex-1 pb-3 text-center font-display text-sm font-semibold" style={{ color: mode === m ? "var(--text)" : "var(--muted)" }}>
               {m === "signin" ? "Sign in" : "Create account"}
             </button>
           ))}
@@ -73,11 +63,6 @@ export default function Auth() {
         {error && (
           <div className="mb-4 rounded-xl border px-4 py-3 text-xs" style={{ borderColor: "rgba(200,80,80,0.4)", background: "rgba(200,80,80,0.1)", color: "#D97066" }}>
             {error}
-          </div>
-        )}
-        {info && (
-          <div className="mb-4 rounded-xl border px-4 py-3 text-xs" style={{ borderColor: "rgba(27,67,50,0.4)", background: "rgba(27,67,50,0.15)", color: "var(--text)" }}>
-            {info}
           </div>
         )}
 

@@ -36,7 +36,7 @@ export default function Header() {
           {user ? (
             <>
               <span className="max-w-[140px] truncate text-sm" style={{ color: "var(--muted)" }}>
-                {user.user_metadata?.full_name || user.email}
+                {user.displayName || user.email}
               </span>
               <button onClick={handleSignOut} className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}>
                 <LogOut size={14} /> Sign out
