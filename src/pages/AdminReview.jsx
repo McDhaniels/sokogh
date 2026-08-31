@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, X, MapPin, Clock, ShieldCheck, AlertTriangle } from "lucide-react";
+import { Check, X, MapPin, Clock, ShieldCheck, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const INITIAL_QUEUE = [
   { id: 1, title: "Bedroom Furniture Set", price: "GH₵ 5,400", location: "Cape Coast", seller: "Nana Yeboah", posted: "3 min ago", category: "Home & Furniture", flag: null, hue: "from-amber-500/25 to-amber-900/10" },
@@ -21,6 +22,7 @@ export default function AdminReview() {
     <div className="min-h-screen w-full font-body">
       <header className="border-b px-5 py-4" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
         <div className="mx-auto flex max-w-4xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}><ArrowLeft size={14} /> Home</Link>
           <div className="flex items-center gap-2">
             <ShieldCheck size={18} style={{ color: "var(--gold)" }} />
             <span className="font-display text-lg font-semibold">Admin — Review Queue</span>

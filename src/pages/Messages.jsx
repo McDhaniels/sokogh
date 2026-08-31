@@ -78,8 +78,9 @@ export default function Messages() {
   return (
     <div className="min-h-screen w-full font-body">
       <header className="border-b px-5 py-4" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
-        <div className="mx-auto flex max-w-6xl items-center gap-1">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <span className="font-display text-lg font-semibold" style={{ color: "var(--gold)" }}>Messages</span>
+          <Link to="/" className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}><ArrowLeft size={14} /> Home</Link>
         </div>
       </header>
 

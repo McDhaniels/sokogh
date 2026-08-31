@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Eye, MessageCircle, Pencil, Trash2, Rocket, Plus, MapPin, Clock } from "lucide-react";
+import { Eye, MessageCircle, Pencil, Trash2, Rocket, Plus, MapPin, Clock, ArrowLeft } from "lucide-react";
 
 const TABS = ["Active", "Pending review", "Rejected", "Sold"];
 
@@ -34,6 +34,7 @@ export default function MyListings() {
     <div className="min-h-screen w-full font-body">
       <header className="border-b px-5 py-4" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
         <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <Link to="/" className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}><ArrowLeft size={14} /> Home</Link>
           <span className="font-display text-lg font-semibold" style={{ color: "var(--gold)" }}>My Listings</span>
           <Link to="/post-ad" className="flex items-center gap-1 rounded-full px-4 py-2 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
             <Plus size={15} /> Post an ad
