@@ -107,7 +107,7 @@ export default function PostAd() {
 
       <main className="mx-auto max-w-3xl px-5 py-10">
         <h1 className="mb-2 font-display text-2xl font-semibold sm:text-3xl">Post an ad</h1>
-        <p className="mb-8 text-sm" style={{ color: "var(--muted)" }}>Takes about 2 minutes. Your ad goes live right away.</p>
+        <p className="mb-8 text-sm" style={{ color: "var(--muted)" }}>Takes about 2 minutes. We'll review it before it goes live.</p>
 
         <div className="mb-10 flex items-center">
           {STEPS.map((label, i) => (

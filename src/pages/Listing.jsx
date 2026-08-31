@@ -91,6 +91,17 @@ export default function Listing() {
     <div className="min-h-screen w-full font-body">
       <Header />
       <main className="mx-auto max-w-7xl px-5 py-8">
+        {user?.uid === listing.sellerId && listing.status !== "active" && (
+          <div className="mb-6 rounded-2xl border px-5 py-3 text-sm" style={{
+            borderColor: listing.status === "rejected" ? "rgba(200,80,80,0.4)" : "rgba(212,165,68,0.4)",
+            background: listing.status === "rejected" ? "rgba(200,80,80,0.1)" : "rgba(212,165,68,0.1)",
+            color: listing.status === "rejected" ? "#D97066" : "var(--gold)",
+          }}>
+            {listing.status === "rejected"
+              ? `This listing was rejected${listing.rejectionReason ? `: ${listing.rejectionReason}` : "."} It's only visible to you.`
+              : "This listing is pending review and only visible to you until it's approved."}
+          </div>
+        )}
         <div className="mb-5 flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
           <Link to="/" style={{ color: "var(--muted)" }}>Home</Link>
           <ChevronRight size={12} />

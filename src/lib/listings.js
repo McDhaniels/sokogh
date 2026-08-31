@@ -1,6 +1,8 @@
 import {
   collection,
   addDoc,
+  updateDoc,
+  deleteDoc,
   getDocs,
   getDoc,
   doc,
@@ -8,6 +10,7 @@ import {
   where,
   orderBy,
   limit as fsLimit,
+  onSnapshot,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebaseClient.js";
@@ -25,7 +28,8 @@ export async function createListing({ title, price, description, category, locat
     contactMethod,
     sellerId,
     sellerName,
-    status: "active",
+    status: "pending",
+    rejectionReason: null,
     createdAt: serverTimestamp(),
   });
   return docRef.id;
@@ -48,4 +52,40 @@ export async function getListingsByCategory(category, count = 24) {
 export async function getListingById(id) {
   const snap = await getDoc(doc(db, "listings", id));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+
+export function subscribePendingListings(callback, onError) {
+  const q = query(listingsRef, where("status", "==", "pending"), orderBy("createdAt", "asc"));
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error("subscribePendingListings error:", err);
+      if (onError) onError(err);
+    }
+  );
+}
+
+export function subscribeSellerListings(sellerId, callback, onError) {
+  const q = query(listingsRef, where("sellerId", "==", sellerId), orderBy("createdAt", "desc"));
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error("subscribeSellerListings error:", err);
+      if (onError) onError(err);
+    }
+  );
+}
+
+export async function approveListing(id) {
+  await updateDoc(doc(db, "listings", id), { status: "active", rejectionReason: null });
+}
+
+export async function rejectListing(id, reason) {
+  await updateDoc(doc(db, "listings", id), { status: "rejected", rejectionReason: reason });
+}
+
+export async function deleteListing(id) {
+  await deleteDoc(doc(db, "listings", id));
 }

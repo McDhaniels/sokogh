@@ -1,22 +1,57 @@
-import { useState } from "react";
-import { Check, X, MapPin, Clock, ShieldCheck, AlertTriangle, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
-
-const INITIAL_QUEUE = [
-  { id: 1, title: "Bedroom Furniture Set", price: "GH₵ 5,400", location: "Cape Coast", seller: "Nana Yeboah", posted: "3 min ago", category: "Home & Furniture", flag: null, hue: "from-amber-500/25 to-amber-900/10" },
-  { id: 2, title: "Unlocked Android Phone", price: "GH₵ 900", location: "Tema", seller: "Kwesi Appiah", posted: "20 min ago", category: "Electronics", flag: "Photo looks blurry", hue: "from-emerald-500/20 to-emerald-900/10" },
-  { id: 3, title: "2019 Honda Civic", price: "GH₵ 92,000", location: "Accra", seller: "Abena Frimpong", posted: "1 hour ago", category: "Vehicles", flag: null, hue: "from-stone-500/25 to-stone-900/10" },
-  { id: 4, title: "Investment opportunity — double your money", price: "GH₵ 500", location: "Kumasi", seller: "New account", posted: "2 hours ago", category: "Services", flag: "Possible scam wording", hue: "from-amber-500/15 to-emerald-900/10" },
-];
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
+import { ADMIN_EMAIL } from "../lib/admin.js";
+import { subscribePendingListings, approveListing, rejectListing } from "../lib/listings.js";
 
 const REJECT_REASONS = ["Unclear photos", "Suspicious / scam wording", "Wrong category", "Prohibited item", "Duplicate listing"];
 
-export default function AdminReview() {
-  const [queue, setQueue] = useState(INITIAL_QUEUE);
-  const [rejectingId, setRejectingId] = useState(null);
+function timeAgo(timestamp) {
+  if (!timestamp?.toDate) return "";
+  const seconds = Math.floor((Date.now() - timestamp.toDate().getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
 
-  function approve(id) { setQueue((q) => q.filter((item) => item.id !== id)); }
-  function reject(id) { setQueue((q) => q.filter((item) => item.id !== id)); setRejectingId(null); }
+export default function AdminReview() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [queue, setQueue] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [rejectingId, setRejectingId] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!user || user.email !== ADMIN_EMAIL) return;
+    const unsub = subscribePendingListings(
+      (list) => { setQueue(list); setLoading(false); },
+      () => { setError(true); setLoading(false); }
+    );
+    return unsub;
+  }, [user]);
+
+  async function handleApprove(id) {
+    setBusyId(id);
+    await approveListing(id);
+    setBusyId(null);
+  }
+
+  async function handleReject(id, reason) {
+    setBusyId(id);
+    await rejectListing(id, reason);
+    setRejectingId(null);
+    setBusyId(null);
+  }
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="min-h-screen w-full font-body">
@@ -32,7 +67,17 @@ export default function AdminReview() {
       </header>
 
       <main className="mx-auto max-w-4xl px-5 py-8">
-        {queue.length === 0 ? (
+        {user.email !== ADMIN_EMAIL ? (
+          <p className="py-24 text-center text-sm" style={{ color: "var(--muted)" }}>
+            This page is only available to SokoGH's admin account.
+          </p>
+        ) : loading ? (
+          <div className="flex items-center justify-center py-24" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={22} /></div>
+        ) : error ? (
+          <p className="py-24 text-center text-sm" style={{ color: "#D97066" }}>
+            Couldn't load the queue. This may mean your account isn't set up as an admin yet, or Firestore rules need updating. Check the browser console for details.
+          </p>
+        ) : queue.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-24 text-center">
             <Check size={32} style={{ color: "var(--gold)" }} />
             <p className="font-display text-lg font-semibold">Queue clear</p>
@@ -41,25 +86,34 @@ export default function AdminReview() {
         ) : (
           <div className="flex flex-col gap-4">
             {queue.map((item) => (
-              <div key={item.id} className="overflow-hidden rounded-2xl border" style={{ borderColor: item.flag ? "rgba(200,80,80,0.4)" : "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+              <div key={item.id} className="overflow-hidden rounded-2xl border" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
                 <div className="flex flex-col gap-4 p-4 sm:flex-row">
-                  <div className={`h-24 w-full shrink-0 rounded-xl bg-gradient-to-br sm:w-32 ${item.hue}`} />
+                  {item.photos?.[0] ? (
+                    <img src={item.photos[0]} alt={item.title} className="h-24 w-full shrink-0 rounded-xl object-cover sm:w-32" />
+                  ) : (
+                    <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl sm:w-32" style={{ background: "var(--surface-2)" }}>
+                      <span className="text-xs" style={{ color: "var(--muted)" }}>No photo</span>
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-display text-sm font-semibold">{item.title}</h3>
+                      <Link to={`/listing/${item.id}`} className="font-display text-sm font-semibold hover:underline">{item.title}</Link>
                       <span className="rounded-full border px-2 py-0.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--muted)" }}>{item.category}</span>
                     </div>
-                    <p className="mt-1 font-display text-sm font-semibold" style={{ color: "var(--gold)" }}>{item.price}</p>
+                    <p className="mt-1 font-display text-sm font-semibold" style={{ color: "var(--gold)" }}>GH₵ {Number(item.price).toLocaleString()}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
                       <span className="flex items-center gap-1"><MapPin size={12} /> {item.location}</span>
-                      <span className="flex items-center gap-1"><Clock size={12} /> {item.posted}</span>
-                      <span>by {item.seller}</span>
+                      <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(item.createdAt)}</span>
+                      <span>by {item.sellerName}</span>
                     </p>
-                    {item.flag && <p className="mt-2 flex items-center gap-1 text-xs" style={{ color: "#D97066" }}><AlertTriangle size={12} /> Auto-flagged: {item.flag}</p>}
                   </div>
                   <div className="flex shrink-0 gap-2 sm:flex-col">
-                    <button onClick={() => approve(item.id)} className="flex flex-1 items-center justify-center gap-1 rounded-full px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ background: "var(--gold)", color: "#0F0E0C" }}><Check size={14} /> Approve</button>
-                    <button onClick={() => setRejectingId(rejectingId === item.id ? null : item.id)} className="flex flex-1 items-center justify-center gap-1 rounded-full border px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ borderColor: "rgba(245,240,232,0.2)", color: "var(--muted)" }}><X size={14} /> Reject</button>
+                    <button onClick={() => handleApprove(item.id)} disabled={busyId === item.id} className="flex flex-1 items-center justify-center gap-1 rounded-full px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                      {busyId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />} Approve
+                    </button>
+                    <button onClick={() => setRejectingId(rejectingId === item.id ? null : item.id)} className="flex flex-1 items-center justify-center gap-1 rounded-full border px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ borderColor: "rgba(245,240,232,0.2)", color: "var(--muted)" }}>
+                      <X size={14} /> Reject
+                    </button>
                   </div>
                 </div>
 
@@ -68,7 +122,7 @@ export default function AdminReview() {
                     <p className="mb-2 text-xs" style={{ color: "var(--muted)" }}>Reason for rejection (seller will see this):</p>
                     <div className="flex flex-wrap gap-2">
                       {REJECT_REASONS.map((reason) => (
-                        <button key={reason} onClick={() => reject(item.id)} className="rounded-full border px-3 py-1.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--text)" }}>{reason}</button>
+                        <button key={reason} onClick={() => handleReject(item.id, reason)} className="rounded-full border px-3 py-1.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--text)" }}>{reason}</button>
                       ))}
                     </div>
                   </div>

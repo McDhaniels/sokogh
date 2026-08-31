@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { ADMIN_EMAIL } from "../lib/admin.js";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,6 +32,7 @@ export default function Header() {
           <Link to="/info" className="hover:text-[var(--text)] transition-colors">How It Works</Link>
           {user && <Link to="/messages" className="hover:text-[var(--text)] transition-colors">Messages</Link>}
           {user && <Link to="/my-listings" className="hover:text-[var(--text)] transition-colors">My Listings</Link>}
+          {user?.email === ADMIN_EMAIL && <Link to="/admin" className="hover:text-[var(--text)] transition-colors">Admin</Link>}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
@@ -70,6 +72,7 @@ export default function Header() {
             <>
               <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
               <Link to="/my-listings" onClick={() => setMenuOpen(false)}>My Listings</Link>
+              {user.email === ADMIN_EMAIL && <Link to="/admin" onClick={() => setMenuOpen(false)}>Admin</Link>}
               <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="text-left">Sign out</button>
             </>
           ) : (
