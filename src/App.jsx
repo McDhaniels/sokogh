@@ -4,6 +4,7 @@ import Category from "./pages/Category.jsx";
 import Listing from "./pages/Listing.jsx";
 import Auth from "./pages/Auth.jsx";
 import PostAd from "./pages/PostAd.jsx";
+import EditListing from "./pages/EditListing.jsx";
 import Messages from "./pages/Messages.jsx";
 import MyListings from "./pages/MyListings.jsx";
 import AdminReview from "./pages/AdminReview.jsx";
@@ -17,6 +18,7 @@ export default function App() {
       <Route path="/listing/:id" element={<Listing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/post-ad" element={<PostAd />} />
+      <Route path="/edit-listing/:id" element={<EditListing />} />
       <Route path="/messages" element={<Messages />} />
       <Route path="/messages/:conversationId" element={<Messages />} />
       <Route path="/my-listings" element={<MyListings />} />

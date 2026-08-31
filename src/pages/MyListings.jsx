@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, MessageCircle, Trash2, Plus, MapPin, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { Eye, MessageCircle, Trash2, Pencil, Plus, MapPin, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { subscribeSellerListings, deleteListing } from "../lib/listings.js";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
@@ -109,6 +109,9 @@ export default function MyListings() {
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
+                  <Link to={`/edit-listing/${item.id}`} className="flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
+                    <Pencil size={14} /> Edit
+                  </Link>
                   <button onClick={() => setConfirmDeleteId(item.id)} disabled={deletingId === item.id} className="flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
                     {deletingId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={14} />} Delete
                   </button>

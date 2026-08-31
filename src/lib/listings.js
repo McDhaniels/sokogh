@@ -80,6 +80,10 @@ export function subscribeSellerListings(sellerId, callback, onError) {
   );
 }
 
+export async function updateListing(id, data) {
+  await updateDoc(doc(db, "listings", id), data);
+}
+
 export async function approveListing(id) {
   await updateDoc(doc(db, "listings", id), { status: "active", rejectionReason: null });
 }
