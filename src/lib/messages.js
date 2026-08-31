@@ -39,23 +39,33 @@ export async function getOrCreateConversation({ listingId, listingTitle, buyerId
   return docRef.id;
 }
 
-export function subscribeToConversations(userId, callback) {
+export function subscribeToConversations(userId, callback, onError) {
   const q = query(
     conversationsRef,
     where("participants", "array-contains", userId),
     orderBy("lastMessageAt", "desc")
   );
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error("subscribeToConversations error:", err);
+      if (onError) onError(err);
+    }
+  );
 }
 
-export function subscribeToMessages(conversationId, callback) {
+export function subscribeToMessages(conversationId, callback, onError) {
   const messagesRef = collection(db, "conversations", conversationId, "messages");
   const q = query(messagesRef, orderBy("createdAt", "asc"));
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  });
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error("subscribeToMessages error:", err);
+      if (onError) onError(err);
+    }
+  );
 }
 
 export async function sendMessage(conversationId, senderId, text) {

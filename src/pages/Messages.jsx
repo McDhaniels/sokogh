@@ -20,6 +20,7 @@ export default function Messages() {
 
   const [conversations, setConversations] = useState([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
+  const [conversationsError, setConversationsError] = useState(false);
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
   const [mobileThreadOpen, setMobileThreadOpen] = useState(!!conversationId);
@@ -31,10 +32,17 @@ export default function Messages() {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeToConversations(user.uid, (list) => {
-      setConversations(list);
-      setConversationsLoading(false);
-    });
+    const unsub = subscribeToConversations(
+      user.uid,
+      (list) => {
+        setConversations(list);
+        setConversationsLoading(false);
+      },
+      () => {
+        setConversationsError(true);
+        setConversationsLoading(false);
+      }
+    );
     return unsub;
   }, [user]);
 
@@ -86,6 +94,10 @@ export default function Messages() {
           <div className="flex-1 overflow-y-auto">
             {conversationsLoading ? (
               <div className="flex items-center justify-center py-12" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={18} /></div>
+            ) : conversationsError ? (
+              <p className="px-4 py-8 text-center text-sm" style={{ color: "#D97066" }}>
+                Couldn't load conversations. Check the browser console for details.
+              </p>
             ) : conversations.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--muted)" }}>
                 No conversations yet. Message a seller from a listing to start one.
