@@ -18,6 +18,7 @@ export default function App() {
       <Route path="/auth" element={<Auth />} />
       <Route path="/post-ad" element={<PostAd />} />
       <Route path="/messages" element={<Messages />} />
+      <Route path="/messages/:conversationId" element={<Messages />} />
       <Route path="/my-listings" element={<MyListings />} />
       <Route path="/admin" element={<AdminReview />} />
       <Route path="/info" element={<Info />} />

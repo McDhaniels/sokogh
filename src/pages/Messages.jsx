@@ -1,25 +1,71 @@
-import { useState } from "react";
-import { Search, Send, ShieldAlert, MoreVertical, ArrowLeft } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Search, Send, ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext.jsx";
+import { subscribeToConversations, subscribeToMessages, sendMessage } from "../lib/messages.js";
 
-const CONVERSATIONS = [
-  { name: "Ama Boateng", listing: "iPhone 13 Pro — 256GB", price: "GH₵ 4,200", last: "Is it still available?", time: "2m", unread: 2, hue: "from-amber-500/25 to-amber-900/10" },
-  { name: "Kojo Mensah", listing: "Toyota Corolla 2016", price: "GH₵ 68,000", last: "Can I come see it Saturday?", time: "1h", unread: 0, hue: "from-emerald-500/20 to-emerald-900/10" },
-  { name: "Efua Owusu", listing: "3-Bedroom Self-Contained", price: "GH₵ 2,500/mo", last: "You: Yes, still available", time: "3h", unread: 0, hue: "from-stone-500/25 to-stone-900/10" },
-  { name: "Yaw Darko", listing: "PlayStation 5", price: "GH₵ 5,200", last: "Ok thank you!", time: "1d", unread: 0, hue: "from-amber-500/20 to-stone-900/10" },
-];
-
-const THREAD = [
-  { from: "them", text: "Hi, is the iPhone 13 Pro still available?", time: "10:02 AM" },
-  { from: "me", text: "Yes it is! Still in great condition.", time: "10:05 AM" },
-  { from: "them", text: "Great. Can I come see it this weekend in Kumasi?", time: "10:06 AM" },
-  { from: "me", text: "Sure, Saturday afternoon works for me.", time: "10:08 AM" },
-  { from: "them", text: "Is it still available?", time: "10:41 AM" },
-];
+function formatTime(timestamp) {
+  if (!timestamp?.toDate) return "";
+  const d = timestamp.toDate();
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
 
 export default function Messages() {
-  const [active, setActive] = useState(0);
-  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
+  const { conversationId } = useParams();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+
+  const [conversations, setConversations] = useState([]);
+  const [conversationsLoading, setConversationsLoading] = useState(true);
+  const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState("");
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(!!conversationId);
+  const bottomRef = useRef(null);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate("/auth");
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeToConversations(user.uid, (list) => {
+      setConversations(list);
+      setConversationsLoading(false);
+    });
+    return unsub;
+  }, [user]);
+
+  useEffect(() => {
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+    const unsub = subscribeToMessages(conversationId, setMessages);
+    return unsub;
+  }, [conversationId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const activeConversation = conversations.find((c) => c.id === conversationId);
+
+  async function handleSend(e) {
+    e.preventDefault();
+    if (!draft.trim() || !conversationId) return;
+    const text = draft.trim();
+    setDraft("");
+    await sendMessage(conversationId, user.uid, text);
+  }
+
+  function otherPartyName(c) {
+    return c.buyerId === user.uid ? c.sellerName : c.buyerName;
+  }
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="min-h-screen w-full font-body">
@@ -38,58 +84,86 @@ export default function Messages() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
-            {CONVERSATIONS.map((c, i) => (
-              <button key={i} onClick={() => { setActive(i); setMobileThreadOpen(true); }} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[var(--surface-2)]" style={{ background: active === i ? "var(--surface-2)" : "transparent" }}>
-                <div className={`h-11 w-11 shrink-0 rounded-full bg-gradient-to-br ${c.hue}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-display text-sm font-medium">{c.name}</span>
-                    <span className="text-xs" style={{ color: "var(--muted)" }}>{c.time}</span>
+            {conversationsLoading ? (
+              <div className="flex items-center justify-center py-12" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={18} /></div>
+            ) : conversations.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm" style={{ color: "var(--muted)" }}>
+                No conversations yet. Message a seller from a listing to start one.
+              </p>
+            ) : (
+              conversations.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => { navigate(`/messages/${c.id}`); setMobileThreadOpen(true); }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[var(--surface-2)]"
+                  style={{ background: conversationId === c.id ? "var(--surface-2)" : "transparent" }}
+                >
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full font-display text-sm font-semibold" style={{ background: "var(--surface-2)", color: "var(--gold)" }}>
+                    {(otherPartyName(c) || "?").charAt(0).toUpperCase()}
                   </div>
-                  <p className="truncate text-xs" style={{ color: "var(--muted)" }}>{c.listing}</p>
-                  <p className="truncate text-xs" style={{ color: c.unread ? "var(--text)" : "var(--muted)" }}>{c.last}</p>
-                </div>
-                {c.unread > 0 && <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-display text-[10px] font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>{c.unread}</span>}
-              </button>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display text-sm font-medium">{otherPartyName(c)}</span>
+                      <span className="text-xs" style={{ color: "var(--muted)" }}>{formatTime(c.lastMessageAt)}</span>
+                    </div>
+                    <p className="truncate text-xs" style={{ color: "var(--muted)" }}>{c.listingTitle}</p>
+                    <p className="truncate text-xs" style={{ color: "var(--muted)" }}>{c.lastMessage || "Say hello…"}</p>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         </aside>
 
         <div className={`${mobileThreadOpen ? "flex" : "hidden"} flex-col md:flex`}>
-          <div className="flex items-center gap-3 border-b px-5 py-3" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
-            <button className="md:hidden" onClick={() => setMobileThreadOpen(false)}><ArrowLeft size={18} /></button>
-            <div className={`h-9 w-9 rounded-full bg-gradient-to-br ${CONVERSATIONS[active].hue}`} />
-            <div className="flex-1">
-              <p className="font-display text-sm font-medium">{CONVERSATIONS[active].name}</p>
-              <p className="text-xs" style={{ color: "var(--muted)" }}>{CONVERSATIONS[active].listing} · {CONVERSATIONS[active].price}</p>
+          {!activeConversation ? (
+            <div className="flex flex-1 items-center justify-center text-sm" style={{ color: "var(--muted)" }}>
+              Select a conversation to start chatting.
             </div>
-            <MoreVertical size={18} style={{ color: "var(--muted)" }} />
-          </div>
-
-          <div className="flex items-center gap-2 px-5 py-2.5 text-xs" style={{ background: "rgba(27,67,50,0.2)", color: "var(--muted)" }}>
-            <ShieldAlert size={14} style={{ color: "var(--gold)" }} />
-            Never send money before inspecting the item in person. Report anything that feels off.
-          </div>
-
-          <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
-            {THREAD.map((m, i) => (
-              <div key={i} className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}>
-                <div className="max-w-[75%] rounded-2xl px-4 py-2.5 text-sm" style={m.from === "me" ? { background: "var(--gold)", color: "#0F0E0C", borderBottomRightRadius: 4 } : { background: "var(--surface)", color: "var(--text)", borderBottomLeftRadius: 4 }}>
-                  {m.text}
-                  <div className="mt-1 text-[10px] opacity-60">{m.time}</div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 border-b px-5 py-3" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
+                <button className="md:hidden" onClick={() => setMobileThreadOpen(false)}><ArrowLeft size={18} /></button>
+                <div className="flex h-9 w-9 items-center justify-center rounded-full font-display text-xs font-semibold" style={{ background: "var(--surface-2)", color: "var(--gold)" }}>
+                  {(otherPartyName(activeConversation) || "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <p className="font-display text-sm font-medium">{otherPartyName(activeConversation)}</p>
+                  <Link to={`/listing/${activeConversation.listingId}`} className="text-xs hover:underline" style={{ color: "var(--muted)" }}>{activeConversation.listingTitle}</Link>
                 </div>
               </div>
-            ))}
-          </div>
 
-          <div className="flex items-center gap-2 border-t p-4" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
-            <div className="field flex-1 rounded-full border px-4 py-2.5" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
-              <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type a message…" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
-            </div>
-            <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
-              <Send size={16} />
-            </button>
-          </div>
+              <div className="flex items-center gap-2 px-5 py-2.5 text-xs" style={{ background: "rgba(27,67,50,0.2)", color: "var(--muted)" }}>
+                <ShieldAlert size={14} style={{ color: "var(--gold)" }} />
+                Never send money before inspecting the item in person. Report anything that feels off.
+              </div>
+
+              <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
+                {messages.length === 0 ? (
+                  <p className="text-center text-sm" style={{ color: "var(--muted)" }}>No messages yet — say hello.</p>
+                ) : (
+                  messages.map((m) => (
+                    <div key={m.id} className={`flex ${m.senderId === user.uid ? "justify-end" : "justify-start"}`}>
+                      <div className="max-w-[75%] rounded-2xl px-4 py-2.5 text-sm" style={m.senderId === user.uid ? { background: "var(--gold)", color: "#0F0E0C", borderBottomRightRadius: 4 } : { background: "var(--surface)", color: "var(--text)", borderBottomLeftRadius: 4 }}>
+                        {m.text}
+                        <div className="mt-1 text-[10px] opacity-60">{formatTime(m.createdAt)}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                <div ref={bottomRef} />
+              </div>
+
+              <form onSubmit={handleSend} className="flex items-center gap-2 border-t p-4" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
+                <div className="field flex-1 rounded-full border px-4 py-2.5" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
+                  <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Type a message…" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+                </div>
+                <button type="submit" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                  <Send size={16} />
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

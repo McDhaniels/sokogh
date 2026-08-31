@@ -29,6 +29,7 @@ export default function Header() {
           <Link to="/category" className="hover:text-[var(--text)] transition-colors">Categories</Link>
           <Link to="/info?tab=safety" className="hover:text-[var(--text)] transition-colors">Safety Tips</Link>
           <Link to="/info" className="hover:text-[var(--text)] transition-colors">How It Works</Link>
+          {user && <Link to="/messages" className="hover:text-[var(--text)] transition-colors">Messages</Link>}
           {user && <Link to="/my-listings" className="hover:text-[var(--text)] transition-colors">My Listings</Link>}
         </nav>
 
@@ -67,6 +68,7 @@ export default function Header() {
           <Link to="/info" onClick={() => setMenuOpen(false)}>How It Works</Link>
           {user ? (
             <>
+              <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
               <Link to="/my-listings" onClick={() => setMenuOpen(false)}>My Listings</Link>
               <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="text-left">Sign out</button>
             </>

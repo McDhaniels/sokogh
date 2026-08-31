@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { MapPin, ShieldCheck, MessageCircle, Heart, Share2, Flag, ChevronRight, Clock, Loader2 } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { getListingById, getListingsByCategory } from "../lib/listings.js";
+import { getOrCreateConversation } from "../lib/messages.js";
 
 const HUES = [
   "from-amber-500/25 to-amber-900/10",
@@ -23,12 +25,15 @@ function timeAgo(timestamp) {
 
 export default function Listing() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [listing, setListing] = useState(null);
   const [similar, setSimilar] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeThumb, setActiveThumb] = useState(0);
   const [saved, setSaved] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -42,6 +47,23 @@ export default function Listing() {
       }
     });
   }, [id]);
+
+  async function handleMessageSeller() {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setStartingChat(true);
+    const conversationId = await getOrCreateConversation({
+      listingId: listing.id,
+      listingTitle: listing.title,
+      buyerId: user.uid,
+      buyerName: user.displayName || user.email,
+      sellerId: listing.sellerId,
+      sellerName: listing.sellerName,
+    });
+    navigate(`/messages/${conversationId}`);
+  }
 
   if (loading) {
     return (
@@ -141,9 +163,16 @@ export default function Listing() {
                   <p className="text-xs" style={{ color: "var(--muted)" }}>Prefers: {listing.contactMethod || "Chat on SokoGH"}</p>
                 </div>
               </div>
-              <Link to="/messages" className="cta-btn mt-4 flex w-full items-center justify-center gap-2 rounded-full py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
-                <MessageCircle size={16} /> Message seller
-              </Link>
+              {user?.uid === listing.sellerId ? (
+                <div className="mt-4 rounded-full py-2.5 text-center text-sm" style={{ background: "var(--surface-2)", color: "var(--muted)" }}>
+                  This is your listing
+                </div>
+              ) : (
+                <button onClick={handleMessageSeller} disabled={startingChat} className="cta-btn mt-4 flex w-full items-center justify-center gap-2 rounded-full py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                  {startingChat ? <Loader2 size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+                  {startingChat ? "Opening chat…" : "Message seller"}
+                </button>
+              )}
               <button className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border py-2.5 text-sm" style={{ borderColor: "rgba(245,240,232,0.15)", color: "var(--muted)" }} onClick={() => setRevealed(true)}>
                 {revealed ? "024 123 4567" : "Reveal phone number"}
               </button>
