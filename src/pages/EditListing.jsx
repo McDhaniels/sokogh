@@ -93,6 +93,8 @@ export default function EditListing() {
         condition,
         businessName: businessName || null,
         photos: [...existingPhotos, ...uploadedUrls],
+        status: "pending",
+        rejectionReason: null,
       });
       navigate(`/listing/${id}`);
     } catch (err) {
@@ -147,7 +149,10 @@ export default function EditListing() {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-10">
-        <h1 className="mb-8 font-display text-2xl font-semibold sm:text-3xl">Edit listing</h1>
+        <h1 className="mb-2 font-display text-2xl font-semibold sm:text-3xl">Edit listing</h1>
+        <p className="mb-8 text-sm" style={{ color: "var(--muted)" }}>
+          Saving changes sends this listing back for review before it's visible to buyers again.
+        </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
