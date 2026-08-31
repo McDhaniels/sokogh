@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Camera, X, Smartphone, Car, Shirt, Home as HomeIcon, 
 import { useAuth } from "../context/AuthContext.jsx";
 import { createListing } from "../lib/listings.js";
 import { uploadImages } from "../lib/cloudinary.js";
+import VerifyEmailPrompt from "../components/VerifyEmailPrompt.jsx";
 
 const STEPS = ["Category", "Details", "Photos", "Contact"];
 const MAX_PHOTOS = 4;
@@ -30,6 +31,7 @@ export default function PostAd() {
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [contactMethod, setContactMethod] = useState("Chat on SokoGH");
+  const [businessName, setBusinessName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitLabel, setSubmitLabel] = useState("Submit ad");
   const [error, setError] = useState("");
@@ -79,6 +81,7 @@ export default function PostAd() {
         location,
         photos: photoUrls,
         contactMethod,
+        businessName: businessName || null,
         sellerId: user.uid,
         sellerName: user.displayName || user.email,
       });
@@ -90,7 +93,29 @@ export default function PostAd() {
     }
   }
 
+  async function handleResend() {
+    await resendVerification();
+    setResendSent(true);
+  }
+
+  async function handleCheckVerified() {
+    setCheckingVerified(true);
+    await refreshUser();
+    setCheckingVerified(false);
+  }
+
   if (loading || !user) return null;
+
+  if (!user.emailVerified) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center px-5 font-body">
+        <div className="w-full max-w-md">
+          <VerifyEmailPrompt message={`Verify ${user.email} before posting an ad — check your inbox for the link.`} />
+          <Link to="/" className="mt-6 block text-center text-sm" style={{ color: "var(--muted)" }}>Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full font-body">
@@ -215,6 +240,15 @@ export default function PostAd() {
                 </label>
               ))}
             </div>
+
+            <div className="mt-5">
+              <label className="mb-2 block font-display text-sm font-medium">Business or shop name <span style={{ color: "var(--muted)", fontWeight: 400 }}>(optional)</span></label>
+              <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
+                <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Kwame's Electronics" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+              </div>
+              <p className="mt-1 text-xs" style={{ color: "var(--muted)" }}>Shown on your listing instead of your name, if you'd rather sell under a business name.</p>
+            </div>
+
             <div className="mt-6 rounded-xl border p-4 text-xs" style={{ borderColor: "rgba(27,67,50,0.4)", background: "rgba(27,67,50,0.15)", color: "var(--muted)" }}>
               Your exact phone number stays hidden until a buyer taps "Reveal" — you're always in control of who can contact you.
             </div>

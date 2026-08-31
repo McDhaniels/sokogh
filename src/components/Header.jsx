@@ -1,18 +1,33 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown, MessageCircle, ListChecks, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ADMIN_EMAIL } from "../lib/admin.js";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (accountRef.current && !accountRef.current.contains(e.target)) {
+        setAccountOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   async function handleSignOut() {
     await signOut();
+    setAccountOpen(false);
     navigate("/");
   }
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   return (
     <header
@@ -30,21 +45,42 @@ export default function Header() {
           <Link to="/category" className="hover:text-[var(--text)] transition-colors">Categories</Link>
           <Link to="/info?tab=safety" className="hover:text-[var(--text)] transition-colors">Safety Tips</Link>
           <Link to="/info" className="hover:text-[var(--text)] transition-colors">How It Works</Link>
-          {user && <Link to="/messages" className="hover:text-[var(--text)] transition-colors">Messages</Link>}
-          {user && <Link to="/my-listings" className="hover:text-[var(--text)] transition-colors">My Listings</Link>}
-          {user?.email === ADMIN_EMAIL && <Link to="/admin" className="hover:text-[var(--text)] transition-colors">Admin</Link>}
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
-            <>
-              <span className="max-w-[140px] truncate text-sm" style={{ color: "var(--muted)" }}>
-                {user.displayName || user.email}
-              </span>
-              <button onClick={handleSignOut} className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}>
-                <LogOut size={14} /> Sign out
+            <div className="relative" ref={accountRef}>
+              <button
+                onClick={() => setAccountOpen((v) => !v)}
+                className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm"
+                style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--text)" }}
+              >
+                <span className="max-w-[120px] truncate">{user.displayName || user.email}</span>
+                <ChevronDown size={14} style={{ transform: accountOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} />
               </button>
-            </>
+
+              {accountOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-2xl border"
+                  style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}
+                >
+                  <Link to="/messages" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[var(--surface-2)]" style={{ color: "var(--text)" }}>
+                    <MessageCircle size={15} /> Messages
+                  </Link>
+                  <Link to="/my-listings" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[var(--surface-2)]" style={{ color: "var(--text)" }}>
+                    <ListChecks size={15} /> My Listings
+                  </Link>
+                  {isAdmin && (
+                    <Link to="/admin" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[var(--surface-2)]" style={{ color: "var(--gold)" }}>
+                      <ShieldCheck size={15} /> Admin
+                    </Link>
+                  )}
+                  <button onClick={handleSignOut} className="flex w-full items-center gap-2 border-t px-4 py-3 text-left text-sm hover:bg-[var(--surface-2)]" style={{ borderColor: "rgba(245,240,232,0.08)", color: "var(--muted)" }}>
+                    <LogOut size={15} /> Sign out
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <Link to="/auth" className="font-body text-sm" style={{ color: "var(--muted)" }}>Sign in</Link>
           )}
@@ -70,9 +106,11 @@ export default function Header() {
           <Link to="/info" onClick={() => setMenuOpen(false)}>How It Works</Link>
           {user ? (
             <>
+              <div className="my-1 border-t" style={{ borderColor: "rgba(245,240,232,0.08)" }} />
+              <span style={{ color: "var(--text)" }}>{user.displayName || user.email}</span>
               <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
               <Link to="/my-listings" onClick={() => setMenuOpen(false)}>My Listings</Link>
-              {user.email === ADMIN_EMAIL && <Link to="/admin" onClick={() => setMenuOpen(false)}>Admin</Link>}
+              {isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: "var(--gold)" }}>Admin</Link>}
               <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="text-left">Sign out</button>
             </>
           ) : (

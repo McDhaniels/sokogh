@@ -5,6 +5,8 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../lib/firebaseClient.js";
 
@@ -42,6 +44,7 @@ export function AuthProvider({ children }) {
       if (fullName) {
         await updateProfile(cred.user, { displayName: fullName });
       }
+      await sendEmailVerification(cred.user);
       return { user: cred.user, error: null };
     } catch (err) {
       return { user: null, error: friendlyError(err) };
@@ -61,8 +64,30 @@ export function AuthProvider({ children }) {
     await firebaseSignOut(auth);
   }
 
+  async function resetPassword(email) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { error: null };
+    } catch (err) {
+      return { error: friendlyError(err) };
+    }
+  }
+
+  async function resendVerification() {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
+  }
+
+  async function refreshUser() {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser });
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, resetPassword, resendVerification, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

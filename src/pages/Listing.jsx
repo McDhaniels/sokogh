@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { MapPin, ShieldCheck, MessageCircle, Heart, Share2, Flag, ChevronRight, Clock, Loader2 } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
+import VerifyEmailPrompt from "../components/VerifyEmailPrompt.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getListingById, getListingsByCategory } from "../lib/listings.js";
 import { getOrCreateConversation } from "../lib/messages.js";
@@ -170,13 +171,17 @@ export default function Listing() {
                   {(listing.sellerName || "?").charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-display text-sm font-semibold">{listing.sellerName}</div>
+                  <div className="font-display text-sm font-semibold">{listing.businessName || listing.sellerName}</div>
                   <p className="text-xs" style={{ color: "var(--muted)" }}>Prefers: {listing.contactMethod || "Chat on SokoGH"}</p>
                 </div>
               </div>
               {user?.uid === listing.sellerId ? (
                 <div className="mt-4 rounded-full py-2.5 text-center text-sm" style={{ background: "var(--surface-2)", color: "var(--muted)" }}>
                   This is your listing
+                </div>
+              ) : user && !user.emailVerified ? (
+                <div className="mt-4">
+                  <VerifyEmailPrompt message="Verify your email before messaging a seller." />
                 </div>
               ) : (
                 <button onClick={handleMessageSeller} disabled={startingChat} className="cta-btn mt-4 flex w-full items-center justify-center gap-2 rounded-full py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>

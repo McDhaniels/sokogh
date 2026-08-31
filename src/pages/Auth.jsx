@@ -12,14 +12,17 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
 
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setInfo("");
 
     if (mode === "signup" && !agreed) {
       setError("Please agree to the terms to continue.");
@@ -34,8 +37,28 @@ export default function Auth() {
 
     if (result.error) {
       setError(result.error);
+    } else if (mode === "signup") {
+      setInfo("Account created! We've sent a verification link to your email — you'll need to verify it before posting an ad or messaging a seller.");
+      navigate("/");
     } else {
       navigate("/");
+    }
+  }
+
+  async function handleForgotPassword() {
+    setError("");
+    setInfo("");
+    if (!email) {
+      setError("Type your email above first, then tap \"Forgot password?\" again.");
+      return;
+    }
+    setResetSending(true);
+    const result = await resetPassword(email);
+    setResetSending(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setInfo("Password reset link sent — check your email.");
     }
   }
 
@@ -63,6 +86,11 @@ export default function Auth() {
         {error && (
           <div className="mb-4 rounded-xl border px-4 py-3 text-xs" style={{ borderColor: "rgba(200,80,80,0.4)", background: "rgba(200,80,80,0.1)", color: "#D97066" }}>
             {error}
+          </div>
+        )}
+        {info && (
+          <div className="mb-4 rounded-xl border px-4 py-3 text-xs" style={{ borderColor: "rgba(27,67,50,0.4)", background: "rgba(27,67,50,0.15)", color: "var(--text)" }}>
+            {info}
           </div>
         )}
 
@@ -97,7 +125,11 @@ export default function Auth() {
           </div>
 
           {mode === "signin" && (
-            <div className="mb-6 text-right"><a href="#" className="text-xs" style={{ color: "var(--gold)" }}>Forgot password?</a></div>
+            <div className="mb-6 text-right">
+              <button type="button" onClick={handleForgotPassword} disabled={resetSending} className="text-xs" style={{ color: "var(--gold)" }}>
+                {resetSending ? "Sending…" : "Forgot password?"}
+              </button>
+            </div>
           )}
 
           {mode === "signup" && (
