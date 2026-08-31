@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, LogOut, ChevronDown, MessageCircle, ListChecks, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ADMIN_EMAIL } from "../lib/admin.js";
+import ConfirmDialog from "./ConfirmDialog.jsx";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const accountRef = useRef(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export default function Header() {
   async function handleSignOut() {
     await signOut();
     setAccountOpen(false);
+    setConfirmSignOut(false);
     navigate("/");
   }
 
@@ -75,7 +78,7 @@ export default function Header() {
                       <ShieldCheck size={15} /> Admin
                     </Link>
                   )}
-                  <button onClick={handleSignOut} className="flex w-full items-center gap-2 border-t px-4 py-3 text-left text-sm hover:bg-[var(--surface-2)]" style={{ borderColor: "rgba(245,240,232,0.08)", color: "var(--muted)" }}>
+                  <button onClick={() => { setConfirmSignOut(true); setAccountOpen(false); }} className="flex w-full items-center gap-2 border-t px-4 py-3 text-left text-sm hover:bg-[var(--surface-2)]" style={{ borderColor: "rgba(245,240,232,0.08)", color: "var(--muted)" }}>
                     <LogOut size={15} /> Sign out
                   </button>
                 </div>
@@ -111,7 +114,7 @@ export default function Header() {
               <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
               <Link to="/my-listings" onClick={() => setMenuOpen(false)}>My Listings</Link>
               {isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: "var(--gold)" }}>Admin</Link>}
-              <button onClick={() => { handleSignOut(); setMenuOpen(false); }} className="text-left">Sign out</button>
+              <button onClick={() => { setConfirmSignOut(true); setMenuOpen(false); }} className="text-left">Sign out</button>
             </>
           ) : (
             <Link to="/auth" onClick={() => setMenuOpen(false)}>Sign in</Link>
@@ -125,6 +128,16 @@ export default function Header() {
             Post an Ad
           </Link>
         </div>
+      )}
+
+      {confirmSignOut && (
+        <ConfirmDialog
+          title="Sign out of SokoGH?"
+          message="You'll need to sign in again to post an ad or message a seller."
+          confirmLabel="Sign out"
+          onConfirm={handleSignOut}
+          onCancel={() => setConfirmSignOut(false)}
+        />
       )}
     </header>
   );

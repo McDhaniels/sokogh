@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, MessageCircle, Trash2, Plus, MapPin, Clock, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { subscribeSellerListings, deleteListing } from "../lib/listings.js";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const TABS = [
   { key: "active", label: "Active" },
@@ -31,6 +32,7 @@ export default function MyListings() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -49,6 +51,7 @@ export default function MyListings() {
     setDeletingId(id);
     await deleteListing(id);
     setDeletingId(null);
+    setConfirmDeleteId(null);
   }
 
   if (authLoading || !user) return null;
@@ -106,7 +109,7 @@ export default function MyListings() {
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-3 self-start sm:self-center">
-                  <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
+                  <button onClick={() => setConfirmDeleteId(item.id)} disabled={deletingId === item.id} className="flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
                     {deletingId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={14} />} Delete
                   </button>
                 </div>
@@ -115,6 +118,17 @@ export default function MyListings() {
           </div>
         )}
       </main>
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          title="Delete this listing?"
+          message="This can't be undone — buyers won't be able to find it anymore."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => handleDelete(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

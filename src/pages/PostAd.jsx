@@ -110,7 +110,7 @@ export default function PostAd() {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center px-5 font-body">
         <div className="w-full max-w-md">
-          <VerifyEmailPrompt message={`Verify ${user.email} before posting an ad — check your inbox for the link.`} />
+          <VerifyEmailPrompt message={`Verify ${user.email} before posting an ad.`} />
           <Link to="/" className="mt-6 block text-center text-sm" style={{ color: "var(--muted)" }}>Back to Home</Link>
         </div>
       </div>

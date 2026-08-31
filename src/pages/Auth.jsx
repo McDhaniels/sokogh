@@ -38,7 +38,7 @@ export default function Auth() {
     if (result.error) {
       setError(result.error);
     } else if (mode === "signup") {
-      setInfo("Account created! We've sent a verification link to your email — you'll need to verify it before posting an ad or messaging a seller.");
+      setInfo("Account created! We've sent a verification link to your email — check your inbox (and spam folder, just in case). You'll need to verify it before posting an ad or messaging a seller.");
       navigate("/");
     } else {
       navigate("/");
@@ -58,7 +58,7 @@ export default function Auth() {
     if (result.error) {
       setError(result.error);
     } else {
-      setInfo("Password reset link sent — check your email.");
+      setInfo("Password reset link sent — check your inbox (and spam folder, just in case).");
     }
   }
 
