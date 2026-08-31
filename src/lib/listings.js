@@ -17,15 +17,17 @@ import { db } from "./firebaseClient.js";
 
 const listingsRef = collection(db, "listings");
 
-export async function createListing({ title, price, description, category, location, photos, contactMethod, sellerId, sellerName }) {
+export async function createListing({ title, price, description, category, location, condition, photos, contactMethod, businessName, sellerId, sellerName }) {
   const docRef = await addDoc(listingsRef, {
     title,
     price: Number(price),
     description,
     category,
     location,
+    condition,
     photos: photos || [],
     contactMethod,
+    businessName: businessName || null,
     sellerId,
     sellerName,
     status: "pending",

@@ -28,6 +28,7 @@ export default function PostAd() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [condition, setCondition] = useState("Used — like new");
   const [photoFiles, setPhotoFiles] = useState([]);
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [contactMethod, setContactMethod] = useState("Chat on SokoGH");
@@ -79,6 +80,7 @@ export default function PostAd() {
         description,
         category,
         location,
+        condition,
         photos: photoUrls,
         contactMethod,
         businessName: businessName || null,
@@ -184,6 +186,27 @@ export default function PostAd() {
               <label className="mb-2 block font-display text-sm font-medium">Location</label>
               <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
                 <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Kumasi, Ashanti Region" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block font-display text-sm font-medium">Condition</label>
+              <div className="grid grid-cols-3 gap-2">
+                {["Brand new", "Used — like new", "Used — fair"].map((opt) => (
+                  <button
+                    type="button"
+                    key={opt}
+                    onClick={() => setCondition(opt)}
+                    className="rounded-xl border px-3 py-2.5 text-xs font-medium"
+                    style={{
+                      borderColor: condition === opt ? "var(--gold)" : "rgba(245,240,232,0.14)",
+                      background: condition === opt ? "var(--surface-2)" : "var(--surface)",
+                      color: condition === opt ? "var(--text)" : "var(--muted)",
+                    }}
+                  >
+                    {opt}
+                  </button>
+                ))}
               </div>
             </div>
 

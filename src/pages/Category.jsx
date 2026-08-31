@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Search, MapPin, ChevronRight, SlidersHorizontal, ChevronDown, Loader2 } from "lucide-react";
+import { Search, MapPin, ChevronRight, SlidersHorizontal, ChevronDown, Loader2, X } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import { getListingsByCategory } from "../lib/listings.js";
@@ -16,9 +16,17 @@ const PRICE_RANGES = ["Any price", "Under GH₵ 500", "GH₵ 500 – 2,000", "GH
 const LOCATIONS = ["All regions", "Greater Accra", "Ashanti", "Western", "Central", "Eastern"];
 const CONDITIONS = ["Any condition", "Brand new", "Used — like new", "Used — fair"];
 
-function FilterGroup({ label, options }) {
+function matchesPriceRange(price, range) {
+  if (range === "Any price") return true;
+  if (range === "Under GH₵ 500") return price < 500;
+  if (range === "GH₵ 500 – 2,000") return price >= 500 && price <= 2000;
+  if (range === "GH₵ 2,000 – 5,000") return price >= 2000 && price <= 5000;
+  if (range === "GH₵ 5,000+") return price > 5000;
+  return true;
+}
+
+function FilterGroup({ label, options, value, onChange }) {
   const [open, setOpen] = useState(true);
-  const [selected, setSelected] = useState(options[0]);
   return (
     <div className="border-b py-4" style={{ borderColor: "rgba(245,240,232,0.08)" }}>
       <button className="flex w-full items-center justify-between font-display text-sm font-medium" onClick={() => setOpen((v) => !v)}>
@@ -29,8 +37,8 @@ function FilterGroup({ label, options }) {
         <div className="mt-3 flex flex-col gap-2">
           {options.map((opt) => (
             <label key={opt} className="flex cursor-pointer items-center gap-2 font-body text-sm" style={{ color: "var(--muted)" }}>
-              <input type="radio" name={label} checked={selected === opt} onChange={() => setSelected(opt)} className="accent-[#D4A544]" />
-              <span style={{ color: selected === opt ? "var(--text)" : "var(--muted)" }}>{opt}</span>
+              <input type="radio" name={label} checked={value === opt} onChange={() => onChange(opt)} className="accent-[#D4A544]" />
+              <span style={{ color: value === opt ? "var(--text)" : "var(--muted)" }}>{opt}</span>
             </label>
           ))}
         </div>
@@ -40,18 +48,61 @@ function FilterGroup({ label, options }) {
 }
 
 export default function Category() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const category = searchParams.get("cat") || "";
+  const initialQuery = searchParams.get("q") || "";
+
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [listings, setListings] = useState([]);
+  const [allListings, setAllListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState(initialQuery);
+
+  const [priceRange, setPriceRange] = useState("Any price");
+  const [region, setRegion] = useState("All regions");
+  const [condition, setCondition] = useState("Any condition");
 
   useEffect(() => {
     setLoading(true);
-    getListingsByCategory(category || null)
-      .then(setListings)
+    getListingsByCategory(category || null, 60)
+      .then(setAllListings)
       .finally(() => setLoading(false));
   }, [category]);
+
+  useEffect(() => {
+    setSearchInput(initialQuery);
+  }, [initialQuery]);
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams);
+    if (searchInput.trim()) params.set("q", searchInput.trim());
+    else params.delete("q");
+    setSearchParams(params);
+  }
+
+  const activeQuery = searchParams.get("q") || "";
+
+  const filteredListings = useMemo(() => {
+    return allListings.filter((item) => {
+      if (activeQuery && !item.title?.toLowerCase().includes(activeQuery.toLowerCase())) return false;
+      if (!matchesPriceRange(Number(item.price), priceRange)) return false;
+      if (region !== "All regions" && !item.location?.toLowerCase().includes(region.toLowerCase())) return false;
+      if (condition !== "Any condition" && item.condition !== condition) return false;
+      return true;
+    });
+  }, [allListings, activeQuery, priceRange, region, condition]);
+
+  const filtersActive = priceRange !== "Any price" || region !== "All regions" || condition !== "Any condition" || activeQuery;
+
+  function clearFilters() {
+    setPriceRange("Any price");
+    setRegion("All regions");
+    setCondition("Any condition");
+    setSearchInput("");
+    const params = new URLSearchParams(searchParams);
+    params.delete("q");
+    setSearchParams(params);
+  }
 
   return (
     <div className="min-h-screen w-full font-body">
@@ -66,12 +117,22 @@ export default function Category() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-2xl font-semibold sm:text-3xl">{category || "All categories"}</h1>
-            <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>{listings.length} listing{listings.length === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-sm" style={{ color: "var(--muted)" }}>
+              {loading ? "Loading…" : `${filteredListings.length} listing${filteredListings.length === 1 ? "" : "s"}`}
+              {activeQuery && ` for "${activeQuery}"`}
+            </p>
           </div>
-          <div className="glow-focus flex items-center gap-2 rounded-full border p-2 pl-4 sm:w-80" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
+          <form onSubmit={handleSearchSubmit} className="glow-focus flex items-center gap-2 rounded-full border p-2 pl-4 sm:w-80" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
             <Search size={16} style={{ color: "var(--muted)" }} />
-            <input type="text" placeholder={`Search${category ? ` in ${category}` : ""}…`} className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
-          </div>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={`Search${category ? ` in ${category}` : ""}…`}
+              className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]"
+            />
+            <button type="submit" className="rounded-full px-4 py-1.5 font-display text-xs font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>Go</button>
+          </form>
         </div>
 
         <button className="mb-4 flex items-center gap-2 rounded-full border px-4 py-2 text-sm md:hidden" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--muted)" }} onClick={() => setFiltersOpen((v) => !v)}>
@@ -81,24 +142,34 @@ export default function Category() {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[220px_1fr]">
           <aside className={`${filtersOpen ? "block" : "hidden"} md:block`}>
             <div className="rounded-2xl border p-5" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-              <h2 className="mb-1 font-display text-sm font-semibold" style={{ color: "var(--gold)" }}>Filters</h2>
-              <FilterGroup label="Price" options={PRICE_RANGES} />
-              <FilterGroup label="Region" options={LOCATIONS} />
-              <FilterGroup label="Condition" options={CONDITIONS} />
-              <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>Filters are visual for now — real filtering comes in a later step.</p>
+              <div className="mb-1 flex items-center justify-between">
+                <h2 className="font-display text-sm font-semibold" style={{ color: "var(--gold)" }}>Filters</h2>
+                {filtersActive && (
+                  <button onClick={clearFilters} className="flex items-center gap-1 text-xs" style={{ color: "var(--muted)" }}>
+                    <X size={12} /> Clear
+                  </button>
+                )}
+              </div>
+              <FilterGroup label="Price" options={PRICE_RANGES} value={priceRange} onChange={setPriceRange} />
+              <FilterGroup label="Region" options={LOCATIONS} value={region} onChange={setRegion} />
+              <FilterGroup label="Condition" options={CONDITIONS} value={condition} onChange={setCondition} />
             </div>
           </aside>
 
           <div>
             {loading ? (
               <div className="flex items-center justify-center py-16" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={20} /></div>
-            ) : listings.length === 0 ? (
+            ) : filteredListings.length === 0 ? (
               <div className="rounded-2xl border border-dashed px-6 py-12 text-center text-sm" style={{ borderColor: "rgba(245,240,232,0.15)", color: "var(--muted)" }}>
-                No listings here yet — be the first to <Link to="/post-ad" style={{ color: "var(--gold)" }}>post an ad</Link>.
+                {filtersActive ? (
+                  <>No listings match your search/filters. <button onClick={clearFilters} className="underline" style={{ color: "var(--gold)" }}>Clear filters</button></>
+                ) : (
+                  <>No listings here yet — be the first to <Link to="/post-ad" style={{ color: "var(--gold)" }}>post an ad</Link>.</>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                {listings.map((item, i) => (
+                {filteredListings.map((item, i) => (
                   <Link to={`/listing/${item.id}`} key={item.id} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
                     {item.photos?.[0] ? (
                       <img src={item.photos[0]} alt={item.title} className="h-32 w-full object-cover" />

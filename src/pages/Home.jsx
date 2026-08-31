@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Search, MapPin, ShieldCheck, ChevronRight, Smartphone, Car, Shirt,
   Home as HomeIcon, Briefcase, Sofa, MessageCircle, Loader2,
@@ -52,6 +52,8 @@ function useCountUp(target, duration = 1400) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [searchInput, setSearchInput] = useState("");
   const sellers = useCountUp(24700);
   const listingsCount = useCountUp(58200);
   const regions = useCountUp(16);
@@ -94,13 +96,23 @@ export default function Home() {
           just a faster way to find what you're looking for.
         </p>
 
-        <div className="glow-focus rise-in mx-auto mt-8 flex max-w-2xl items-center gap-2 rounded-full border p-2 pl-5" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)", animationDelay: "0.24s" }}>
+        <form
+          onSubmit={(e) => { e.preventDefault(); if (searchInput.trim()) navigate(`/category?q=${encodeURIComponent(searchInput.trim())}`); }}
+          className="glow-focus rise-in mx-auto mt-8 flex max-w-2xl items-center gap-2 rounded-full border p-2 pl-5"
+          style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)", animationDelay: "0.24s" }}
+        >
           <Search size={18} style={{ color: "var(--muted)" }} />
-          <input type="text" placeholder="Search phones, cars, apartments, services…" className="w-full bg-transparent font-body text-sm outline-none placeholder:text-[var(--muted)]" />
-          <Link to="/category" className="flex items-center gap-1 whitespace-nowrap rounded-full px-5 py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search phones, cars, apartments, services…"
+            className="w-full bg-transparent font-body text-sm outline-none placeholder:text-[var(--muted)]"
+          />
+          <button type="submit" className="flex items-center gap-1 whitespace-nowrap rounded-full px-5 py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
             Search
-          </Link>
-        </div>
+          </button>
+        </form>
 
         <div className="rise-in mx-auto mt-10 flex max-w-xl items-center justify-center gap-10 font-body text-sm" style={{ color: "var(--muted)", animationDelay: "0.32s" }}>
           <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{listingsCount.toLocaleString()}+</div>active listings</div>
