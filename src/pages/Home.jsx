@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search, MapPin, ShieldCheck, ChevronRight, Smartphone, Car, Shirt,
-  Home as HomeIcon, Briefcase, Sofa, MessageCircle, Loader2,
+  Home as HomeIcon, Briefcase, Sofa, MessageCircle, Loader2, Star,
 } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
@@ -153,7 +153,12 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {listings.map((item, i) => (
-              <Link to={`/listing/${item.id}`} key={item.id} className="listing-card overflow-hidden rounded-2xl border block" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+              <Link to={`/listing/${item.id}`} key={item.id} className="listing-card relative overflow-hidden rounded-2xl border block" style={{ borderColor: item.boosted ? "rgba(212,165,68,0.5)" : "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+                {item.boosted && (
+                  <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                    <Star size={10} fill="#0F0E0C" /> Featured
+                  </span>
+                )}
                 {item.photos?.[0] ? (
                   <img src={item.photos[0]} alt={item.title} className="h-32 w-full object-cover" />
                 ) : (

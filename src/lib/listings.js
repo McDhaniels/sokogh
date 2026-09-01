@@ -42,10 +42,14 @@ export async function createListing({ title, price, description, category, locat
   return docRef.id;
 }
 
+function sortBoostedFirst(list) {
+  return [...list].sort((a, b) => (b.boosted ? 1 : 0) - (a.boosted ? 1 : 0));
+}
+
 export async function getRecentListings(count = 8) {
   const q = query(listingsRef, where("status", "==", "active"), orderBy("createdAt", "desc"), fsLimit(count));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return sortBoostedFirst(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
 }
 
 export async function getListingsByCategory(category, count = 24) {
@@ -53,7 +57,7 @@ export async function getListingsByCategory(category, count = 24) {
     ? query(listingsRef, where("status", "==", "active"), where("category", "==", category), orderBy("createdAt", "desc"), fsLimit(count))
     : query(listingsRef, where("status", "==", "active"), orderBy("createdAt", "desc"), fsLimit(count));
   const snap = await getDocs(base);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return sortBoostedFirst(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
 }
 
 export async function getListingById(id) {
@@ -87,6 +91,22 @@ export function subscribeSellerListings(sellerId, callback, onError) {
 
 export async function updateListing(id, data) {
   await updateDoc(doc(db, "listings", id), data);
+}
+
+export function subscribeActiveListings(callback, onError) {
+  const q = query(listingsRef, where("status", "==", "active"), orderBy("createdAt", "desc"));
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error("subscribeActiveListings error:", err);
+      if (onError) onError(err);
+    }
+  );
+}
+
+export async function setBoosted(id, boosted) {
+  await updateDoc(doc(db, "listings", id), { boosted });
 }
 
 export async function approveListing(id) {
