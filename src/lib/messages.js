@@ -11,6 +11,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "./firebaseClient.js";
+import { incrementMessageCount } from "./listings.js";
 
 const conversationsRef = collection(db, "conversations");
 
@@ -36,6 +37,7 @@ export async function getOrCreateConversation({ listingId, listingTitle, buyerId
     lastMessageAt: serverTimestamp(),
     createdAt: serverTimestamp(),
   });
+  await incrementMessageCount(listingId);
   return docRef.id;
 }
 

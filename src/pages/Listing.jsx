@@ -5,7 +5,7 @@ import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import VerifyEmailPrompt from "../components/VerifyEmailPrompt.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { getListingById, getListingsByCategory } from "../lib/listings.js";
+import { getListingById, getListingsByCategory, incrementViews } from "../lib/listings.js";
 import { getOrCreateConversation } from "../lib/messages.js";
 
 const HUES = [
@@ -41,6 +41,9 @@ export default function Listing() {
     getListingById(id).then((data) => {
       setListing(data);
       setLoading(false);
+      if (data && data.sellerId !== user?.uid) {
+        incrementViews(id);
+      }
       if (data?.category) {
         getListingsByCategory(data.category, 6).then((list) =>
           setSimilar(list.filter((l) => l.id !== id).slice(0, 3))

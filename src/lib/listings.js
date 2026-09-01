@@ -12,6 +12,7 @@ import {
   limit as fsLimit,
   onSnapshot,
   serverTimestamp,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebaseClient.js";
 
@@ -33,6 +34,9 @@ export async function createListing({ title, price, description, category, locat
     sellerName,
     status: "pending",
     rejectionReason: null,
+    views: 0,
+    messageCount: 0,
+    boosted: false,
     createdAt: serverTimestamp(),
   });
   return docRef.id;
@@ -95,4 +99,12 @@ export async function rejectListing(id, reason) {
 
 export async function deleteListing(id) {
   await deleteDoc(doc(db, "listings", id));
+}
+
+export async function incrementViews(id) {
+  await updateDoc(doc(db, "listings", id), { views: increment(1) });
+}
+
+export async function incrementMessageCount(id) {
+  await updateDoc(doc(db, "listings", id), { messageCount: increment(1) });
 }

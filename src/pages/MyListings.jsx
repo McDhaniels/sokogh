@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, MessageCircle, Trash2, Pencil, Plus, MapPin, Clock, ArrowLeft, Loader2 } from "lucide-react";
+import { Eye, MessageCircle, Trash2, Pencil, Plus, MapPin, Clock, ArrowLeft, Loader2, TrendingUp, Star } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useAuth } from "../context/AuthContext.jsx";
 import { subscribeSellerListings, deleteListing } from "../lib/listings.js";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
@@ -71,6 +72,30 @@ export default function MyListings() {
       </header>
 
       <main className="mx-auto max-w-5xl px-5 py-8">
+        {!loading && listings.length > 0 && (
+          <div className="mb-8 rounded-2xl border p-5" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+            <div className="mb-4 flex items-center gap-2">
+              <TrendingUp size={16} style={{ color: "var(--gold)" }} />
+              <h2 className="font-display text-sm font-semibold">Performance overview</h2>
+            </div>
+            <div style={{ width: "100%", height: 220 }}>
+              <ResponsiveContainer>
+                <BarChart data={listings.map((l) => ({ name: l.title.length > 14 ? l.title.slice(0, 14) + "…" : l.title, Views: l.views || 0, Messages: l.messageCount || 0 }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(245,240,232,0.08)" />
+                  <XAxis dataKey="name" tick={{ fill: "var(--muted)", fontSize: 11 }} axisLine={{ stroke: "rgba(245,240,232,0.1)" }} tickLine={false} />
+                  <YAxis tick={{ fill: "var(--muted)", fontSize: 11 }} axisLine={{ stroke: "rgba(245,240,232,0.1)" }} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={{ background: "var(--surface-2)", border: "1px solid rgba(245,240,232,0.1)", borderRadius: 12, fontSize: 12 }} labelStyle={{ color: "var(--text)" }} />
+                  <Bar dataKey="Views" fill="#D4A544" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="Messages" fill="#1B4332" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-2 text-xs" style={{ color: "var(--muted)" }}>
+              Real views and messages across all your listings — this is engagement, not sales data (SokoGH doesn't process payments, so it can't track orders).
+            </p>
+          </div>
+        )}
+
         <div className="mb-6 flex gap-6 border-b" style={{ borderColor: "rgba(245,240,232,0.1)" }}>
           {TABS.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} className="border-b-2 pb-3 font-display text-sm font-medium" style={{ borderColor: tab === t.key ? "var(--gold)" : "transparent", color: tab === t.key ? "var(--text)" : "var(--muted)" }}>
@@ -103,6 +128,11 @@ export default function MyListings() {
                   <p className="mt-1 flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
                     <span className="flex items-center gap-1"><MapPin size={12} /> {item.location}</span>
                     <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(item.createdAt)}</span>
+                    <span className="flex items-center gap-1"><Eye size={12} /> {item.views || 0} views</span>
+                    <span className="flex items-center gap-1"><MessageCircle size={12} /> {item.messageCount || 0} messages</span>
+                    {item.boosted && (
+                      <span className="flex items-center gap-1" style={{ color: "var(--gold)" }}><Star size={12} fill="var(--gold)" /> Boosted</span>
+                    )}
                   </p>
                   {item.status === "rejected" && item.rejectionReason && (
                     <p className="mt-1 text-xs" style={{ color: "#D97066" }}>Reason: {item.rejectionReason}</p>
