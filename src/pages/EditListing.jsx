@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { getListingById, updateListing } from "../lib/listings.js";
 import { uploadImages } from "../lib/cloudinary.js";
 import VerifyEmailPrompt from "../components/VerifyEmailPrompt.jsx";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const MAX_PHOTOS = 4;
 const CONDITIONS = ["Brand new", "Used — like new", "Used — fair"];
@@ -31,6 +32,7 @@ export default function EditListing() {
   const [submitting, setSubmitting] = useState(false);
   const [submitLabel, setSubmitLabel] = useState("Save changes");
   const [error, setError] = useState("");
+  const [confirmSave, setConfirmSave] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -74,8 +76,13 @@ export default function EditListing() {
     setNewPreviews((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function handleSubmit(e) {
+  function handleFormSubmit(e) {
     e.preventDefault();
+    setConfirmSave(true);
+  }
+
+  async function handleConfirmedSave() {
+    setConfirmSave(false);
     setError("");
     setSubmitting(true);
     try {
@@ -149,12 +156,9 @@ export default function EditListing() {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 py-10">
-        <h1 className="mb-2 font-display text-2xl font-semibold sm:text-3xl">Edit listing</h1>
-        <p className="mb-8 text-sm" style={{ color: "var(--muted)" }}>
-          Saving changes sends this listing back for review before it's visible to buyers again.
-        </p>
+        <h1 className="mb-8 font-display text-2xl font-semibold sm:text-3xl">Edit listing</h1>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleFormSubmit} className="flex flex-col gap-5">
           <div>
             <label className="mb-2 block font-display text-sm font-medium">Title</label>
             <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
@@ -242,6 +246,16 @@ export default function EditListing() {
           </button>
         </form>
       </main>
+
+      {confirmSave && (
+        <ConfirmDialog
+          title="Send for review?"
+          message="Saving these changes will hide this listing from buyers until it's reviewed and approved again."
+          confirmLabel="Save & submit for review"
+          onConfirm={handleConfirmedSave}
+          onCancel={() => setConfirmSave(false)}
+        />
+      )}
     </div>
   );
 }
