@@ -24,6 +24,7 @@ export default function EditListing() {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [condition, setCondition] = useState("Used — like new");
+  const [hours, setHours] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [existingPhotos, setExistingPhotos] = useState([]);
   const [newFiles, setNewFiles] = useState([]);
@@ -47,6 +48,7 @@ export default function EditListing() {
       setDescription(data.description || "");
       setLocation(data.location || "");
       setCondition(data.condition || "Used — like new");
+      setHours(data.hours || "");
       setBusinessName(data.businessName || "");
       setExistingPhotos(data.photos || []);
       setLoading(false);
@@ -97,7 +99,8 @@ export default function EditListing() {
         price: Number(price),
         description,
         location,
-        condition,
+        condition: listing.category === "Services" ? null : condition,
+        hours: listing.category === "Services" ? hours : null,
         businessName: businessName || null,
         photos: [...existingPhotos, ...uploadedUrls],
         status: "pending",
@@ -180,16 +183,25 @@ export default function EditListing() {
             </div>
           </div>
 
-          <div>
-            <label className="mb-2 block font-display text-sm font-medium">Condition</label>
-            <div className="grid grid-cols-3 gap-2">
-              {CONDITIONS.map((opt) => (
-                <button type="button" key={opt} onClick={() => setCondition(opt)} className="rounded-xl border px-3 py-2.5 text-xs font-medium" style={{ borderColor: condition === opt ? "var(--gold)" : "rgba(245,240,232,0.14)", background: condition === opt ? "var(--surface-2)" : "var(--surface)", color: condition === opt ? "var(--text)" : "var(--muted)" }}>
-                  {opt}
-                </button>
-              ))}
+          {listing.category === "Services" ? (
+            <div>
+              <label className="mb-2 block font-display text-sm font-medium">Hours <span style={{ color: "var(--muted)", fontWeight: 400 }}>(optional)</span></label>
+              <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
+                <input value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. Mon–Sat, 8am–6pm" className="w-full bg-transparent text-sm outline-none" />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="mb-2 block font-display text-sm font-medium">Condition</label>
+              <div className="grid grid-cols-3 gap-2">
+                {CONDITIONS.map((opt) => (
+                  <button type="button" key={opt} onClick={() => setCondition(opt)} className="rounded-xl border px-3 py-2.5 text-xs font-medium" style={{ borderColor: condition === opt ? "var(--gold)" : "rgba(245,240,232,0.14)", background: condition === opt ? "var(--surface-2)" : "var(--surface)", color: condition === opt ? "var(--text)" : "var(--muted)" }}>
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="mb-2 block font-display text-sm font-medium">Description</label>
