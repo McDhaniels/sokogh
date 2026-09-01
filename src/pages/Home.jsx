@@ -7,6 +7,7 @@ import {
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
 import { getRecentListings } from "../lib/listings.js";
+import { getActiveBanners } from "../lib/banners.js";
 
 const TICKER_ITEMS = [
   "New listing: iPhone 13 Pro — Kumasi · 2 min ago",
@@ -60,11 +61,18 @@ export default function Home() {
 
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [banner, setBanner] = useState(null);
 
   useEffect(() => {
     getRecentListings(8)
       .then(setListings)
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getActiveBanners().then((banners) => {
+      if (banners.length > 0) setBanner(banners[Math.floor(Math.random() * banners.length)]);
+    });
   }, []);
 
   return (
@@ -178,10 +186,17 @@ export default function Home() {
       </section>
 
       <section className="mx-auto max-w-7xl px-5 pb-16">
-        <div className="flex items-center justify-between rounded-2xl border border-dashed px-6 py-8 font-body text-sm" style={{ borderColor: "rgba(245,240,232,0.18)", color: "var(--muted)" }}>
-          <span>Sponsored — banner rotates here</span>
-          <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--surface-2)" }}>728×90</span>
-        </div>
+        {banner ? (
+          <a href={banner.linkUrl || "#"} target="_blank" rel="noopener noreferrer" className="relative block overflow-hidden rounded-2xl border" style={{ borderColor: "rgba(245,240,232,0.1)" }}>
+            <img src={banner.imageUrl} alt="Sponsored" className="h-auto max-h-40 w-full object-cover" />
+            <span className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ background: "rgba(15,14,12,0.75)", color: "var(--text)" }}>Sponsored</span>
+          </a>
+        ) : (
+          <div className="flex items-center justify-between rounded-2xl border border-dashed px-6 py-8 font-body text-sm" style={{ borderColor: "rgba(245,240,232,0.18)", color: "var(--muted)" }}>
+            <span>Sponsored — banner rotates here</span>
+            <span className="rounded-full px-3 py-1 text-xs" style={{ background: "var(--surface-2)" }}>728×90</span>
+          </div>
+        )}
       </section>
 
       <section className="mx-auto max-w-7xl px-5 pb-20">

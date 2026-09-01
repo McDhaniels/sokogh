@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2, Star, Search } from "lucide-react";
+import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2, Star, Search, Image, Trash2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ADMIN_EMAIL } from "../lib/admin.js";
 import { subscribePendingListings, approveListing, rejectListing, subscribeActiveListings, setBoosted } from "../lib/listings.js";
+import { subscribeBanners, createBanner, setBannerActive, deleteBanner } from "../lib/banners.js";
+import { uploadImage } from "../lib/cloudinary.js";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const REJECT_REASONS = ["Unclear photos", "Suspicious / scam wording", "Wrong category", "Prohibited item", "Duplicate listing"];
 
@@ -33,6 +36,15 @@ export default function AdminReview() {
   const [boostSearch, setBoostSearch] = useState("");
   const [boostBusyId, setBoostBusyId] = useState(null);
 
+  const [banners, setBanners] = useState([]);
+  const [bannersLoading, setBannersLoading] = useState(true);
+  const [bannersError, setBannersError] = useState(false);
+  const [newBannerFile, setNewBannerFile] = useState(null);
+  const [newBannerPreview, setNewBannerPreview] = useState(null);
+  const [newBannerLink, setNewBannerLink] = useState("");
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [confirmDeleteBannerId, setConfirmDeleteBannerId] = useState(null);
+
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
@@ -55,6 +67,15 @@ export default function AdminReview() {
     return unsub;
   }, [user, tab]);
 
+  useEffect(() => {
+    if (!user || user.email !== ADMIN_EMAIL || tab !== "banners") return;
+    const unsub = subscribeBanners(
+      (list) => { setBanners(list); setBannersLoading(false); },
+      () => { setBannersError(true); setBannersLoading(false); }
+    );
+    return unsub;
+  }, [user, tab]);
+
   async function handleApprove(id) {
     setBusyId(id);
     await approveListing(id);
@@ -72,6 +93,38 @@ export default function AdminReview() {
     setBoostBusyId(id);
     await setBoosted(id, !current);
     setBoostBusyId(null);
+  }
+
+  function handleBannerFileSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNewBannerFile(file);
+    setNewBannerPreview(URL.createObjectURL(file));
+    e.target.value = "";
+  }
+
+  async function handleAddBanner() {
+    if (!newBannerFile) return;
+    setBannerUploading(true);
+    try {
+      const url = await uploadImage(newBannerFile);
+      await createBanner({ imageUrl: url, linkUrl: newBannerLink.trim() });
+      setNewBannerFile(null);
+      setNewBannerPreview(null);
+      setNewBannerLink("");
+    } catch {
+      alert("Couldn't upload that banner. Please try again.");
+    }
+    setBannerUploading(false);
+  }
+
+  async function handleToggleBannerActive(id, current) {
+    await setBannerActive(id, !current);
+  }
+
+  async function handleDeleteBanner(id) {
+    await deleteBanner(id);
+    setConfirmDeleteBannerId(null);
   }
 
   const filteredActiveListings = useMemo(() => {
@@ -108,6 +161,9 @@ export default function AdminReview() {
               </button>
               <button onClick={() => setTab("boosts")} className="border-b-2 pb-3 font-display text-sm font-medium" style={{ borderColor: tab === "boosts" ? "var(--gold)" : "transparent", color: tab === "boosts" ? "var(--text)" : "var(--muted)" }}>
                 Manage Boosts
+              </button>
+              <button onClick={() => setTab("banners")} className="border-b-2 pb-3 font-display text-sm font-medium" style={{ borderColor: tab === "banners" ? "var(--gold)" : "transparent", color: tab === "banners" ? "var(--text)" : "var(--muted)" }}>
+                Sponsored Banners
               </button>
             </div>
 
@@ -220,9 +276,83 @@ export default function AdminReview() {
                 )}
               </div>
             )}
+
+            {tab === "banners" && (
+              <div>
+                <p className="mb-5 text-sm" style={{ color: "var(--muted)" }}>
+                  Banners rotate randomly on the Home page. Arrange sponsorships directly with brands, then add their banner here — SokoGH doesn't process payments for this either.
+                </p>
+
+                <div className="mb-8 rounded-2xl border p-5" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+                  <h3 className="mb-3 font-display text-sm font-semibold">Add a banner</h3>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    {newBannerPreview ? (
+                      <img src={newBannerPreview} alt="Preview" className="h-24 w-full rounded-xl object-cover sm:w-40" />
+                    ) : (
+                      <label className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed sm:w-40" style={{ borderColor: "rgba(245,240,232,0.15)" }}>
+                        <Image size={18} style={{ color: "var(--muted)" }} />
+                        <span className="text-xs" style={{ color: "var(--muted)" }}>Choose image</span>
+                        <input type="file" accept="image/*" onChange={handleBannerFileSelect} className="hidden" />
+                      </label>
+                    )}
+                    <div className="flex-1">
+                      <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface-2)" }}>
+                        <input value={newBannerLink} onChange={(e) => setNewBannerLink(e.target.value)} placeholder="Link when clicked (optional) — https://…" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+                      </div>
+                      <button
+                        onClick={handleAddBanner}
+                        disabled={!newBannerFile || bannerUploading}
+                        className="mt-3 flex items-center gap-2 rounded-full px-5 py-2 font-display text-sm font-semibold"
+                        style={{ background: "var(--gold)", color: "#0F0E0C" }}
+                      >
+                        {bannerUploading && <Loader2 size={14} className="animate-spin" />}
+                        {bannerUploading ? "Uploading…" : "Add banner"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {bannersLoading ? (
+                  <div className="flex items-center justify-center py-16" style={{ color: "var(--muted)" }}><Loader2 className="animate-spin" size={20} /></div>
+                ) : bannersError ? (
+                  <p className="py-16 text-center text-sm" style={{ color: "#D97066" }}>Couldn't load banners. Check the browser console for details.</p>
+                ) : banners.length === 0 ? (
+                  <p className="py-8 text-center text-sm" style={{ color: "var(--muted)" }}>No banners yet.</p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {banners.map((b) => (
+                      <div key={b.id} className="flex items-center gap-4 rounded-2xl border p-4" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+                        <img src={b.imageUrl} alt="Banner" className="h-14 w-24 shrink-0 rounded-lg object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs" style={{ color: "var(--muted)" }}>{b.linkUrl || "No link set"}</p>
+                          <span className="text-xs font-medium" style={{ color: b.active ? "var(--gold)" : "var(--muted)" }}>{b.active ? "Active" : "Paused"}</span>
+                        </div>
+                        <button onClick={() => handleToggleBannerActive(b.id, b.active)} className="shrink-0 rounded-full border px-3 py-1.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.2)", color: "var(--muted)" }}>
+                          {b.active ? "Pause" : "Activate"}
+                        </button>
+                        <button onClick={() => setConfirmDeleteBannerId(b.id)} className="shrink-0" style={{ color: "var(--muted)" }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </main>
+
+      {confirmDeleteBannerId && (
+        <ConfirmDialog
+          title="Delete this banner?"
+          message="It will stop showing on the Home page immediately."
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => handleDeleteBanner(confirmDeleteBannerId)}
+          onCancel={() => setConfirmDeleteBannerId(null)}
+        />
+      )}
     </div>
   );
 }
