@@ -207,8 +207,9 @@ export default function Home() {
           <div>
             <h3 className="font-display text-lg font-semibold">Deal safely</h3>
             <p className="mt-1 max-w-2xl font-body text-sm" style={{ color: "var(--muted)" }}>
-              We connect buyers and sellers — we don't handle payments. Meet in a public place, inspect
-              before you pay, and never send money to someone you haven't verified. Report anything that feels off.
+              We connect buyers and sellers — we don't handle payments. Meeting up? Inspect
+              before you pay. Getting something delivered? Agree on the details in chat first
+              and be cautious about paying in full up front. Report anything that feels off.
             </p>
           </div>
           <Link to="/info?tab=safety" className="flex shrink-0 items-center gap-2 rounded-full border px-5 py-2.5 font-display text-sm font-semibold sm:ml-auto" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>

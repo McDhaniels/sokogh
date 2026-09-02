@@ -12,15 +12,15 @@ const HOW_IT_WORKS = [
 ];
 
 const DO_LIST = [
-  { icon: MapPin, text: "Meet in a public, well-lit place — a mall, a busy shop, a police station forecourt." },
-  { icon: Eye, text: "Inspect the item fully before paying anything — test it, check for damage." },
-  { icon: ShieldCheck, text: "Prefer sellers with a verified badge and good ratings when you can." },
+  { icon: MapPin, text: "For in-person deals: meet in a public, well-lit place and inspect the item fully before paying." },
+  { icon: ShieldCheck, text: "For delivery: agree on the item, price, and delivery method clearly in chat before sending any money." },
+  { icon: Eye, text: "If paying before delivery, prefer sellers with a verified badge and good history, and keep your chat as proof of what was agreed." },
 ];
 
 const DONT_LIST = [
-  { icon: PhoneOff, text: "Don't send money, momo, or deposits before you've seen the item in person." },
-  { icon: Ban, text: "Don't deal with anyone who pressures you to hurry or avoid meeting face-to-face." },
-  { icon: AlertTriangle, text: "Don't ignore your instincts — if a price feels too good to be true, it usually is." },
+  { icon: PhoneOff, text: "Don't pay in full up front to someone with no history, whether it's a meetup or a delivery." },
+  { icon: Ban, text: "Don't deal with anyone who pressures you to hurry, skip questions, or avoid clear delivery details." },
+  { icon: AlertTriangle, text: "Don't ignore your instincts — if a price or a delivery story feels off, it usually is." },
 ];
 
 export default function Info() {

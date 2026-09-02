@@ -212,8 +212,10 @@ export default function Listing() {
                 <h3 className="font-display text-sm font-semibold">Deal safely</h3>
               </div>
               <p className="mt-2 text-xs leading-relaxed" style={{ color: "var(--muted)" }}>
-                SokoGH doesn't handle payments. Meet the seller in a public place, inspect the
-                item before paying, and never send money in advance to someone you haven't met.
+                SokoGH doesn't handle payments. If you're meeting in person, inspect the
+                item before paying. If you're arranging delivery, agree on the details clearly
+                in chat and be cautious about paying in full to someone you haven't dealt
+                with before.
               </p>
               <button className="mt-3 flex items-center gap-1 text-xs" style={{ color: "var(--gold)" }}><Flag size={12} /> Report this listing</button>
             </div>

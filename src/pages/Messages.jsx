@@ -148,7 +148,7 @@ export default function Messages() {
 
               <div className="flex items-center gap-2 px-5 py-2.5 text-xs" style={{ background: "rgba(27,67,50,0.2)", color: "var(--muted)" }}>
                 <ShieldAlert size={14} style={{ color: "var(--gold)" }} />
-                Never send money before inspecting the item in person. Report anything that feels off.
+                Meeting in person? Inspect before you pay. Arranging delivery? Agree on details in chat first and be cautious about paying in full up front. Report anything that feels off.
               </div>
 
               <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
