@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Search, MapPin, ShieldCheck, ChevronRight, Smartphone, Car, Shirt,
-  Home as HomeIcon, Briefcase, Sofa, MessageCircle, Loader2, Star,
+  Search, MapPin, ShieldCheck, ChevronRight, BookOpen, Home as HomeIcon, GraduationCap,
+  Shirt, Laptop, Ticket, MessageCircle, Loader2, Star,
 } from "lucide-react";
 import Header from "../components/Header.jsx";
 import Footer from "../components/Footer.jsx";
@@ -10,21 +10,21 @@ import { getRecentListings } from "../lib/listings.js";
 import { getActiveBanners } from "../lib/banners.js";
 
 const TICKER_ITEMS = [
-  "New listing: iPhone 13 Pro — Kumasi · 2 min ago",
-  "New listing: Toyota Corolla 2016 — Accra · 5 min ago",
-  "New listing: 3-Bedroom House, East Legon · 9 min ago",
-  "New listing: Samsung 55\" TV — Takoradi · 12 min ago",
-  "New listing: Graphic Designer Services — Tema · 15 min ago",
-  "New listing: Ankara Fabric Bundle — Kumasi · 21 min ago",
+  "New listing: Calculus Textbook — Hostel A · 2 min ago",
+  "New listing: Mini Fridge — Hostel B · 5 min ago",
+  "New listing: Graphics Tutoring — Available weekends · 9 min ago",
+  "New listing: iPhone 12, 128GB · 12 min ago",
+  "New listing: Denim Jacket, size M · 15 min ago",
+  "New listing: End-of-Sem Party Tickets · 21 min ago",
 ];
 
 const CATEGORIES = [
-  { name: "Electronics", icon: Smartphone },
-  { name: "Vehicles", icon: Car },
+  { name: "Textbooks & Notes", icon: BookOpen },
+  { name: "Hostel & Dorm", icon: HomeIcon },
+  { name: "Tutoring & Services", icon: GraduationCap },
   { name: "Fashion", icon: Shirt },
-  { name: "Real Estate", icon: HomeIcon },
-  { name: "Services", icon: Briefcase },
-  { name: "Home & Furniture", icon: Sofa },
+  { name: "Electronics", icon: Laptop },
+  { name: "Events & Tickets", icon: Ticket },
 ];
 
 const HUES = [
@@ -34,30 +34,9 @@ const HUES = [
   "from-amber-500/20 to-stone-900/10",
 ];
 
-function useCountUp(target, duration = 1400) {
-  const [value, setValue] = useState(0);
-  const ref = useRef(null);
-  useEffect(() => {
-    let startTime = null;
-    function step(ts) {
-      if (!startTime) startTime = ts;
-      const progress = Math.min((ts - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.floor(eased * target));
-      if (progress < 1) ref.current = requestAnimationFrame(step);
-    }
-    ref.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(ref.current);
-  }, [target, duration]);
-  return value;
-}
-
 export default function Home() {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState("");
-  const sellers = useCountUp(24700);
-  const listingsCount = useCountUp(58200);
-  const regions = useCountUp(16);
 
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +71,7 @@ export default function Home() {
 
       <section className="mx-auto max-w-7xl px-5 pt-16 pb-14 text-center">
         <p className="rise-in mb-4 font-body text-xs uppercase tracking-[0.25em]" style={{ color: "var(--gold)" }}>
-          Ghana's marketplace, one search away
+          A marketplace for verified students
         </p>
         <h1 className="rise-in font-display text-4xl font-semibold leading-tight sm:text-5xl md:text-6xl" style={{ animationDelay: "0.08s" }}>
           Find it. Message the seller.
@@ -100,8 +79,8 @@ export default function Home() {
           <span className="font-mark italic" style={{ color: "var(--gold)" }}>Deal directly.</span>
         </h1>
         <p className="rise-in mx-auto mt-5 max-w-xl font-body text-base" style={{ color: "var(--muted)", animationDelay: "0.16s" }}>
-          Thousands of sellers across every region. No middleman, no platform fees on your deal —
-          just a faster way to find what you're looking for.
+          Buy and sell with real students on campus — textbooks, hostel essentials,
+          tutoring, and more. No middleman, no platform fees on your deal.
         </p>
 
         <form
@@ -114,7 +93,7 @@ export default function Home() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search phones, cars, apartments, services…"
+            placeholder="Search textbooks, electronics, tutoring, hostel items…"
             className="w-full bg-transparent font-body text-sm outline-none placeholder:text-[var(--muted)]"
           />
           <button type="submit" className="flex items-center gap-1 whitespace-nowrap rounded-full px-5 py-2.5 font-display text-sm font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
@@ -122,13 +101,9 @@ export default function Home() {
           </button>
         </form>
 
-        <div className="rise-in mx-auto mt-10 flex max-w-xl items-center justify-center gap-10 font-body text-sm" style={{ color: "var(--muted)", animationDelay: "0.32s" }}>
-          <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{listingsCount.toLocaleString()}+</div>active listings</div>
-          <div className="h-8 w-px" style={{ background: "rgba(245,240,232,0.14)" }} />
-          <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{sellers.toLocaleString()}+</div>sellers</div>
-          <div className="h-8 w-px" style={{ background: "rgba(245,240,232,0.14)" }} />
-          <div><div className="font-display text-xl font-semibold" style={{ color: "var(--text)" }}>{regions}</div>regions covered</div>
-        </div>
+        <p className="rise-in mx-auto mt-8 max-w-xl font-body text-sm" style={{ color: "var(--muted)", animationDelay: "0.32s" }}>
+          Just getting started — be one of the first to post a listing.
+        </p>
       </section>
 
       <section className="mx-auto max-w-7xl px-5 pb-16">

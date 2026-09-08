@@ -9,6 +9,7 @@ import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const MAX_PHOTOS = 4;
 const CONDITIONS = ["Brand new", "Used — like new", "Used — fair"];
+const NO_CONDITION_CATEGORIES = ["Tutoring & Services", "Events & Tickets"];
 
 export default function EditListing() {
   const { id } = useParams();
@@ -99,8 +100,8 @@ export default function EditListing() {
         price: Number(price),
         description,
         location,
-        condition: listing.category === "Services" ? null : condition,
-        hours: listing.category === "Services" ? hours : null,
+        condition: NO_CONDITION_CATEGORIES.includes(listing.category) ? null : condition,
+        hours: NO_CONDITION_CATEGORIES.includes(listing.category) ? hours : null,
         businessName: businessName || null,
         photos: [...existingPhotos, ...uploadedUrls],
         status: "pending",
@@ -177,17 +178,19 @@ export default function EditListing() {
           </div>
 
           <div>
-            <label className="mb-2 block font-display text-sm font-medium">Location</label>
+            <label className="mb-2 block font-display text-sm font-medium">Hall / Hostel or campus area</label>
             <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
               <input value={location} onChange={(e) => setLocation(e.target.value)} required className="w-full bg-transparent text-sm outline-none" />
             </div>
           </div>
 
-          {listing.category === "Services" ? (
+          {NO_CONDITION_CATEGORIES.includes(listing.category) ? (
             <div>
-              <label className="mb-2 block font-display text-sm font-medium">Hours <span style={{ color: "var(--muted)", fontWeight: 400 }}>(optional)</span></label>
+              <label className="mb-2 block font-display text-sm font-medium">
+                {listing.category === "Events & Tickets" ? "Event date & time" : "Hours"} <span style={{ color: "var(--muted)", fontWeight: 400 }}>(optional)</span>
+              </label>
               <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
-                <input value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. Mon–Sat, 8am–6pm" className="w-full bg-transparent text-sm outline-none" />
+                <input value={hours} onChange={(e) => setHours(e.target.value)} placeholder={listing.category === "Events & Tickets" ? "e.g. Sat 14 Sept, 6pm" : "e.g. Mon–Fri, 2pm–6pm"} className="w-full bg-transparent text-sm outline-none" />
               </div>
             </div>
           ) : (

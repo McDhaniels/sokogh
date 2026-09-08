@@ -13,7 +13,6 @@ const HUES = [
 ];
 
 const PRICE_RANGES = ["Any price", "Under GH₵ 500", "GH₵ 500 – 2,000", "GH₵ 2,000 – 5,000", "GH₵ 5,000+"];
-const LOCATIONS = ["All regions", "Greater Accra", "Ashanti", "Western", "Central", "Eastern"];
 const CONDITIONS = ["Any condition", "Brand new", "Used — like new", "Used — fair"];
 
 function matchesPriceRange(price, range) {
@@ -58,7 +57,6 @@ export default function Category() {
   const [searchInput, setSearchInput] = useState(initialQuery);
 
   const [priceRange, setPriceRange] = useState("Any price");
-  const [region, setRegion] = useState("All regions");
   const [condition, setCondition] = useState("Any condition");
 
   useEffect(() => {
@@ -86,17 +84,15 @@ export default function Category() {
     return allListings.filter((item) => {
       if (activeQuery && !item.title?.toLowerCase().includes(activeQuery.toLowerCase())) return false;
       if (!matchesPriceRange(Number(item.price), priceRange)) return false;
-      if (region !== "All regions" && !item.location?.toLowerCase().includes(region.toLowerCase())) return false;
       if (condition !== "Any condition" && item.condition !== condition) return false;
       return true;
     });
-  }, [allListings, activeQuery, priceRange, region, condition]);
+  }, [allListings, activeQuery, priceRange, condition]);
 
-  const filtersActive = priceRange !== "Any price" || region !== "All regions" || condition !== "Any condition" || activeQuery;
+  const filtersActive = priceRange !== "Any price" || condition !== "Any condition" || activeQuery;
 
   function clearFilters() {
     setPriceRange("Any price");
-    setRegion("All regions");
     setCondition("Any condition");
     setSearchInput("");
     const params = new URLSearchParams(searchParams);
@@ -151,7 +147,6 @@ export default function Category() {
                 )}
               </div>
               <FilterGroup label="Price" options={PRICE_RANGES} value={priceRange} onChange={setPriceRange} />
-              <FilterGroup label="Region" options={LOCATIONS} value={region} onChange={setRegion} />
               <FilterGroup label="Condition" options={CONDITIONS} value={condition} onChange={setCondition} />
             </div>
           </aside>

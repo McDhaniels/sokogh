@@ -164,9 +164,11 @@ export default function Listing() {
             <div className="mt-6 rounded-2xl border p-5" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
               <h2 className="mb-2 font-display text-sm font-semibold">Description</h2>
               <p className="text-sm leading-relaxed" style={{ color: "var(--muted)" }}>{listing.description || "No description provided."}</p>
-              {listing.category === "Services" && listing.hours ? (
+              {(listing.category === "Tutoring & Services" || listing.category === "Events & Tickets") && listing.hours ? (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs" style={{ color: "var(--muted)" }}>
-                  <span className="rounded-full border px-3 py-1" style={{ borderColor: "rgba(245,240,232,0.14)" }}>Hours: {listing.hours}</span>
+                  <span className="rounded-full border px-3 py-1" style={{ borderColor: "rgba(245,240,232,0.14)" }}>
+                    {listing.category === "Events & Tickets" ? "When" : "Hours"}: {listing.hours}
+                  </span>
                 </div>
               ) : listing.condition ? (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs" style={{ color: "var(--muted)" }}>

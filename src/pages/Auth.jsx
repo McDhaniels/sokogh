@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Phone, Lock, User, Mail, ShieldCheck, ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
+import { isStudentEmail, STUDENT_EMAIL_DOMAIN } from "../lib/studentEmail.js";
 
 export default function Auth() {
   const [mode, setMode] = useState("signin");
@@ -23,6 +24,11 @@ export default function Auth() {
     e.preventDefault();
     setError("");
     setInfo("");
+
+    if (mode === "signup" && !isStudentEmail(email)) {
+      setError(`SokoGH is currently for verified university students only — please sign up with your student email (ending in ${STUDENT_EMAIL_DOMAIN}).`);
+      return;
+    }
 
     if (mode === "signup" && !agreed) {
       setError("Please agree to the terms to continue.");
@@ -113,7 +119,7 @@ export default function Auth() {
 
           <div className="field mb-4 flex items-center gap-2 rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
             <Mail size={16} style={{ color: "var(--muted)" }} />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Email address" required className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={mode === "signup" ? "you@st.ug.edu.gh" : "Email address"} required className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
           </div>
 
           <div className="field mb-2 flex items-center gap-2 rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
@@ -135,7 +141,7 @@ export default function Auth() {
           {mode === "signup" && (
             <label className="mb-6 mt-3 flex cursor-pointer items-start gap-2 text-xs" style={{ color: "var(--muted)" }}>
               <input type="checkbox" checked={agreed} onChange={() => setAgreed((v) => !v)} className="mt-0.5 accent-[#D4A544]" />
-              <span>I agree to SokoGH's Terms and understand SokoGH only advertises listings — it does not process payments or guarantee any deal between buyers and sellers.</span>
+              <span>I agree to SokoGH's Terms, confirm I'm a verified student, and understand SokoGH only advertises listings — it does not process payments or guarantee any deal between buyers and sellers.</span>
             </label>
           )}
 

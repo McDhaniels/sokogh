@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Camera, X, Smartphone, Car, Shirt, Home as HomeIcon, Briefcase, Sofa, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, Camera, X, BookOpen, Home as HomeIcon, GraduationCap, Shirt, Laptop, Ticket, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { createListing } from "../lib/listings.js";
 import { uploadImages } from "../lib/cloudinary.js";
@@ -10,13 +10,15 @@ const STEPS = ["Category", "Details", "Photos", "Contact"];
 const MAX_PHOTOS = 4;
 
 const CATEGORIES = [
-  { name: "Electronics", icon: Smartphone },
-  { name: "Vehicles", icon: Car },
+  { name: "Textbooks & Notes", icon: BookOpen },
+  { name: "Hostel & Dorm", icon: HomeIcon },
+  { name: "Tutoring & Services", icon: GraduationCap },
   { name: "Fashion", icon: Shirt },
-  { name: "Real Estate", icon: HomeIcon },
-  { name: "Services", icon: Briefcase },
-  { name: "Home & Furniture", icon: Sofa },
+  { name: "Electronics", icon: Laptop },
+  { name: "Events & Tickets", icon: Ticket },
 ];
+
+const NO_CONDITION_CATEGORIES = ["Tutoring & Services", "Events & Tickets"];
 
 export default function PostAd() {
   const { user, loading } = useAuth();
@@ -81,8 +83,8 @@ export default function PostAd() {
         description,
         category,
         location,
-        condition: category === "Services" ? null : condition,
-        hours: category === "Services" ? hours : null,
+        condition: NO_CONDITION_CATEGORIES.includes(category) ? null : condition,
+        hours: NO_CONDITION_CATEGORIES.includes(category) ? hours : null,
         photos: photoUrls,
         contactMethod,
         businessName: businessName || null,
@@ -185,17 +187,24 @@ export default function PostAd() {
             </div>
 
             <div>
-              <label className="mb-2 block font-display text-sm font-medium">Location</label>
+              <label className="mb-2 block font-display text-sm font-medium">Hall / Hostel or campus area</label>
               <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
-                <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Kumasi, Ashanti Region" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+                <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Hostel A, Room 12" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
               </div>
             </div>
 
-            {category === "Services" ? (
+            {NO_CONDITION_CATEGORIES.includes(category) ? (
               <div>
-                <label className="mb-2 block font-display text-sm font-medium">Hours <span style={{ color: "var(--muted)", fontWeight: 400 }}>(optional)</span></label>
+                <label className="mb-2 block font-display text-sm font-medium">
+                  {category === "Events & Tickets" ? "Event date & time" : "Hours"} <span style={{ color: "var(--muted)", fontWeight: 400 }}>(optional)</span>
+                </label>
                 <div className="field rounded-xl border px-4 py-3" style={{ borderColor: "rgba(245,240,232,0.14)", background: "var(--surface)" }}>
-                  <input value={hours} onChange={(e) => setHours(e.target.value)} placeholder="e.g. Mon–Sat, 8am–6pm" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+                  <input
+                    value={hours}
+                    onChange={(e) => setHours(e.target.value)}
+                    placeholder={category === "Events & Tickets" ? "e.g. Sat 14 Sept, 6pm" : "e.g. Mon–Fri, 2pm–6pm"}
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]"
+                  />
                 </div>
               </div>
             ) : (
