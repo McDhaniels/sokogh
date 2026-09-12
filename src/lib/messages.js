@@ -70,6 +70,25 @@ export function subscribeToMessages(conversationId, callback, onError) {
   );
 }
 
+export async function markDealOutcome(conversationId, outcome, uid) {
+  await updateDoc(doc(db, "conversations", conversationId), {
+    dealOutcome: outcome,
+    dealOutcomeBy: uid,
+    dealOutcomeAt: serverTimestamp(),
+  });
+}
+
+export function subscribeAllConversationsForAdmin(callback, onError) {
+  return onSnapshot(
+    conversationsRef,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error("subscribeAllConversationsForAdmin error:", err);
+      if (onError) onError(err);
+    }
+  );
+}
+
 export async function sendMessage(conversationId, senderId, text) {
   const messagesRef = collection(db, "conversations", conversationId, "messages");
   await addDoc(messagesRef, {

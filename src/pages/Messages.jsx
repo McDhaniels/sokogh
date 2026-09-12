@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Search, Send, ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
+import { Search, Send, ShieldAlert, ArrowLeft, Loader2, CheckCircle2, XCircle, Handshake } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
-import { subscribeToConversations, subscribeToMessages, sendMessage } from "../lib/messages.js";
+import { subscribeToConversations, subscribeToMessages, sendMessage, markDealOutcome } from "../lib/messages.js";
 
 function formatTime(timestamp) {
   if (!timestamp?.toDate) return "";
@@ -71,6 +71,10 @@ export default function Messages() {
 
   function otherPartyName(c) {
     return c.buyerId === user.uid ? c.sellerName : c.buyerName;
+  }
+
+  async function handleMarkOutcome(outcome) {
+    await markDealOutcome(conversationId, outcome, user.uid);
   }
 
   if (authLoading || !user) return null;
@@ -150,6 +154,31 @@ export default function Messages() {
                 <ShieldAlert size={14} style={{ color: "var(--gold)" }} />
                 Meeting in person? Inspect before you pay. Arranging delivery? Agree on details in chat first and be cautious about paying in full up front. Report anything that feels off.
               </div>
+
+              {activeConversation.dealOutcome ? (
+                <div className="flex items-center justify-between gap-2 px-5 py-2 text-xs" style={{ background: "var(--surface-2)", color: "var(--muted)" }}>
+                  <span className="flex items-center gap-1.5">
+                    {activeConversation.dealOutcome === "completed" ? (
+                      <><CheckCircle2 size={13} style={{ color: "var(--gold)" }} /> Marked as: deal completed</>
+                    ) : (
+                      <><XCircle size={13} /> Marked as: didn't work out</>
+                    )}
+                  </span>
+                  <button onClick={() => handleMarkOutcome(null)} className="underline">Change</button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 px-5 py-2 text-xs" style={{ background: "var(--surface-2)", color: "var(--muted)" }}>
+                  <span className="flex items-center gap-1"><Handshake size={13} /> How did this go?</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleMarkOutcome("completed")} className="rounded-full px-3 py-1 font-medium" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                      We met up / deal done
+                    </button>
+                    <button onClick={() => handleMarkOutcome("no_deal")} className="rounded-full border px-3 py-1" style={{ borderColor: "rgba(245,240,232,0.2)" }}>
+                      Didn't work out
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="flex-1 space-y-3 overflow-y-auto px-5 py-5">
                 {messages.length === 0 ? (

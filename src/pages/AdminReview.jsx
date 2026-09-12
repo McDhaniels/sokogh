@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2, Star, Search, Image, Trash2 } from "lucide-react";
+import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2, Star, Search, Image, Trash2, Handshake } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ADMIN_EMAIL } from "../lib/admin.js";
 import { subscribePendingListings, approveListing, rejectListing, subscribeActiveListings, setBoosted } from "../lib/listings.js";
 import { subscribeBanners, createBanner, setBannerActive, deleteBanner } from "../lib/banners.js";
+import { subscribeAllConversationsForAdmin } from "../lib/messages.js";
 import { uploadImage } from "../lib/cloudinary.js";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
@@ -23,6 +24,7 @@ export default function AdminReview() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState("pending");
+  const [conversations, setConversations] = useState([]);
 
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,12 @@ export default function AdminReview() {
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
   }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    if (!user || user.email !== ADMIN_EMAIL) return;
+    const unsub = subscribeAllConversationsForAdmin(setConversations, () => {});
+    return unsub;
+  }, [user]);
 
   useEffect(() => {
     if (!user || user.email !== ADMIN_EMAIL) return;
@@ -155,6 +163,36 @@ export default function AdminReview() {
           </p>
         ) : (
           <>
+            <div className="mb-6 rounded-2xl border p-5" style={{ borderColor: "rgba(212,165,68,0.3)", background: "rgba(212,165,68,0.06)" }}>
+              <div className="flex items-center gap-2">
+                <Handshake size={16} style={{ color: "var(--gold)" }} />
+                <h2 className="font-display text-sm font-semibold">The number that actually matters</h2>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-8">
+                <div>
+                  <div className="font-display text-2xl font-semibold" style={{ color: "var(--gold)" }}>
+                    {conversations.filter((c) => c.dealOutcome === "completed").length}
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Deals completed</p>
+                </div>
+                <div>
+                  <div className="font-display text-2xl font-semibold" style={{ color: "var(--text)" }}>
+                    {conversations.length}
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Real conversations started</p>
+                </div>
+                <div>
+                  <div className="font-display text-2xl font-semibold" style={{ color: "var(--text)" }}>
+                    {conversations.filter((c) => c.dealOutcome === "no_deal").length}
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>Didn't work out</p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs" style={{ color: "var(--muted)" }}>
+                Self-reported by buyers/sellers marking "How did this go?" in Messages — not verified, but honest and real, unlike listing or view counts.
+              </p>
+            </div>
+
             <div className="mb-6 flex gap-6 border-b" style={{ borderColor: "rgba(245,240,232,0.1)" }}>
               <button onClick={() => setTab("pending")} className="border-b-2 pb-3 font-display text-sm font-medium" style={{ borderColor: tab === "pending" ? "var(--gold)" : "transparent", color: tab === "pending" ? "var(--text)" : "var(--muted)" }}>
                 Pending Review <span className="ml-1 text-xs" style={{ color: "var(--muted)" }}>({queue.length})</span>
