@@ -93,6 +93,12 @@ export async function updateListing(id, data) {
   await updateDoc(doc(db, "listings", id), data);
 }
 
+export async function getSellerListingsCount(sellerId) {
+  const q = query(listingsRef, where("sellerId", "==", sellerId));
+  const snap = await getDocs(q);
+  return snap.size;
+}
+
 export function subscribeActiveListings(callback, onError) {
   const q = query(listingsRef, where("status", "==", "active"), orderBy("createdAt", "desc"));
   return onSnapshot(

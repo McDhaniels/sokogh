@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut, ChevronDown, MessageCircle, ListChecks, ShieldCheck } from "lucide-react";
+import { Menu, X, LogOut, ChevronDown, MessageCircle, ListChecks, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ADMIN_EMAIL } from "../lib/admin.js";
 import ConfirmDialog from "./ConfirmDialog.jsx";
@@ -67,6 +67,9 @@ export default function Header() {
                   className="absolute right-0 top-full mt-2 w-52 overflow-hidden rounded-2xl border"
                   style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}
                 >
+                  <Link to="/profile" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[var(--surface-2)]" style={{ color: "var(--text)" }}>
+                    <User size={15} /> Profile
+                  </Link>
                   <Link to="/messages" onClick={() => setAccountOpen(false)} className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-[var(--surface-2)]" style={{ color: "var(--text)" }}>
                     <MessageCircle size={15} /> Messages
                   </Link>
@@ -111,6 +114,7 @@ export default function Header() {
             <>
               <div className="my-1 border-t" style={{ borderColor: "rgba(245,240,232,0.08)" }} />
               <span style={{ color: "var(--text)" }}>{user.displayName || user.email}</span>
+              <Link to="/profile" onClick={() => setMenuOpen(false)}>Profile</Link>
               <Link to="/messages" onClick={() => setMenuOpen(false)}>Messages</Link>
               <Link to="/my-listings" onClick={() => setMenuOpen(false)}>My Listings</Link>
               {isAdmin && <Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: "var(--gold)" }}>Admin</Link>}
