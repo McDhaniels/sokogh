@@ -9,6 +9,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../lib/firebaseClient.js";
+import { ensureUserProfile } from "../lib/users.js";
 
 const AuthContext = createContext(null);
 
@@ -34,6 +35,9 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
+      if (firebaseUser) {
+        ensureUserProfile(firebaseUser.uid, { displayName: firebaseUser.displayName, email: firebaseUser.email });
+      }
     });
     return unsubscribe;
   }, []);

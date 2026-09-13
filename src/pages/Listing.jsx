@@ -7,6 +7,7 @@ import VerifyEmailPrompt from "../components/VerifyEmailPrompt.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { getListingById, getListingsByCategory, incrementViews } from "../lib/listings.js";
 import { getOrCreateConversation } from "../lib/messages.js";
+import { getUserProfile } from "../lib/users.js";
 
 const HUES = [
   "from-amber-500/25 to-amber-900/10",
@@ -24,6 +25,11 @@ function timeAgo(timestamp) {
   return `${Math.floor(seconds / 86400)}d ago`;
 }
 
+function memberSince(timestamp) {
+  if (!timestamp?.toDate) return null;
+  return timestamp.toDate().toLocaleDateString([], { month: "short", year: "numeric" });
+}
+
 export default function Listing() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,6 +41,7 @@ export default function Listing() {
   const [saved, setSaved] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [startingChat, setStartingChat] = useState(false);
+  const [sellerProfile, setSellerProfile] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -43,6 +50,9 @@ export default function Listing() {
       setLoading(false);
       if (data && data.sellerId !== user?.uid) {
         incrementViews(id);
+      }
+      if (data?.sellerId) {
+        getUserProfile(data.sellerId).then(setSellerProfile);
       }
       if (data?.category) {
         getListingsByCategory(data.category, 6).then((list) =>
@@ -189,6 +199,14 @@ export default function Listing() {
                   <p className="text-xs" style={{ color: "var(--muted)" }}>Prefers: {listing.contactMethod || "Chat on SokoGH"}</p>
                 </div>
               </div>
+              {sellerProfile && (
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-xs" style={{ borderColor: "rgba(245,240,232,0.08)", color: "var(--muted)" }}>
+                  {memberSince(sellerProfile.createdAt) && <span>Member since {memberSince(sellerProfile.createdAt)}</span>}
+                  {sellerProfile.completedDeals > 0 && (
+                    <span style={{ color: "var(--gold)" }}>{sellerProfile.completedDeals} completed deal{sellerProfile.completedDeals === 1 ? "" : "s"} on SokoGH</span>
+                  )}
+                </div>
+              )}
               {user?.uid === listing.sellerId ? (
                 <div className="mt-4 rounded-full py-2.5 text-center text-sm" style={{ background: "var(--surface-2)", color: "var(--muted)" }}>
                   This is your listing

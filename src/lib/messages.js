@@ -9,9 +9,11 @@ import {
   onSnapshot,
   serverTimestamp,
   getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { db } from "./firebaseClient.js";
 import { incrementMessageCount } from "./listings.js";
+import { incrementCompletedDeals } from "./users.js";
 
 const conversationsRef = collection(db, "conversations");
 
@@ -71,11 +73,25 @@ export function subscribeToMessages(conversationId, callback, onError) {
 }
 
 export async function markDealOutcome(conversationId, outcome, uid) {
-  await updateDoc(doc(db, "conversations", conversationId), {
+  const convRef = doc(db, "conversations", conversationId);
+  const convSnap = await getDoc(convRef);
+  const data = convSnap.exists() ? convSnap.data() : null;
+  const previousOutcome = data?.dealOutcome || null;
+  const sellerId = data?.sellerId || null;
+
+  await updateDoc(convRef, {
     dealOutcome: outcome,
     dealOutcomeBy: uid,
     dealOutcomeAt: serverTimestamp(),
   });
+
+  if (sellerId) {
+    if (outcome === "completed" && previousOutcome !== "completed") {
+      await incrementCompletedDeals(sellerId, 1);
+    } else if (outcome !== "completed" && previousOutcome === "completed") {
+      await incrementCompletedDeals(sellerId, -1);
+    }
+  }
 }
 
 export function subscribeAllConversationsForAdmin(callback, onError) {
