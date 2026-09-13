@@ -9,7 +9,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "../lib/firebaseClient.js";
-import { ensureUserProfile } from "../lib/users.js";
+import { syncUserProfile } from "../lib/users.js";
 
 const AuthContext = createContext(null);
 
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
       setUser(firebaseUser);
       setLoading(false);
       if (firebaseUser) {
-        ensureUserProfile(firebaseUser.uid, { displayName: firebaseUser.displayName, email: firebaseUser.email });
+        syncUserProfile(firebaseUser.uid, { displayName: firebaseUser.displayName, email: firebaseUser.email, emailVerified: firebaseUser.emailVerified });
       }
     });
     return unsubscribe;
@@ -87,6 +87,7 @@ export function AuthProvider({ children }) {
     if (auth.currentUser) {
       await auth.currentUser.reload();
       setUser({ ...auth.currentUser });
+      syncUserProfile(auth.currentUser.uid, { displayName: auth.currentUser.displayName, email: auth.currentUser.email, emailVerified: auth.currentUser.emailVerified });
     }
   }
 

@@ -93,6 +93,13 @@ export async function updateListing(id, data) {
   await updateDoc(doc(db, "listings", id), data);
 }
 
+export async function getActiveListingsBySeller(sellerId) {
+  const q = query(listingsRef, where("sellerId", "==", sellerId), where("status", "==", "active"));
+  const snap = await getDocs(q);
+  const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return list.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+}
+
 export async function getSellerListingsCount(sellerId) {
   const q = query(listingsRef, where("sellerId", "==", sellerId));
   const snap = await getDocs(q);

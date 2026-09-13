@@ -10,6 +10,7 @@ import MyListings from "./pages/MyListings.jsx";
 import AdminReview from "./pages/AdminReview.jsx";
 import Info from "./pages/Info.jsx";
 import Profile from "./pages/Profile.jsx";
+import SellerProfile from "./pages/SellerProfile.jsx";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/admin" element={<AdminReview />} />
       <Route path="/info" element={<Info />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/seller/:id" element={<SellerProfile />} />
     </Routes>
   );
 }

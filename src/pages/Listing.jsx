@@ -190,15 +190,15 @@ export default function Listing() {
 
           <div className="flex flex-col gap-5">
             <div className="rounded-2xl border p-5" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-              <div className="flex items-center gap-3">
+              <Link to={`/seller/${listing.sellerId}`} className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full font-display text-lg font-semibold" style={{ background: "var(--surface-2)", color: "var(--gold)" }}>
                   {(listing.sellerName || "?").charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="font-display text-sm font-semibold">{listing.businessName || listing.sellerName}</div>
+                  <div className="font-display text-sm font-semibold hover:underline">{listing.businessName || listing.sellerName}</div>
                   <p className="text-xs" style={{ color: "var(--muted)" }}>Prefers: {listing.contactMethod || "Chat on SokoGH"}</p>
                 </div>
-              </div>
+              </Link>
               {sellerProfile && (
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t pt-3 text-xs" style={{ borderColor: "rgba(245,240,232,0.08)", color: "var(--muted)" }}>
                   {memberSince(sellerProfile.createdAt) && <span>Member since {memberSince(sellerProfile.createdAt)}</span>}
