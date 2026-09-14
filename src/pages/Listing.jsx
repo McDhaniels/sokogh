@@ -190,13 +190,16 @@ export default function Listing() {
 
           <div className="flex flex-col gap-5">
             <div className="rounded-2xl border p-5" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-              <Link to={`/seller/${listing.sellerId}`} className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full font-display text-lg font-semibold" style={{ background: "var(--surface-2)", color: "var(--gold)" }}>
+              <Link to={`/seller/${listing.sellerId}`} className="group flex items-center gap-3 rounded-xl p-2 -m-2 transition-colors hover:bg-[var(--surface-2)]">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full font-display text-xl font-semibold" style={{ background: "var(--surface-2)", color: "var(--gold)" }}>
                   {(listing.sellerName || "?").charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div className="font-display text-sm font-semibold hover:underline">{listing.businessName || listing.sellerName}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-display text-base font-semibold">{listing.businessName || listing.sellerName}</div>
                   <p className="text-xs" style={{ color: "var(--muted)" }}>Prefers: {listing.contactMethod || "Chat on SokoGH"}</p>
+                  <p className="mt-0.5 flex items-center gap-1 text-xs font-medium" style={{ color: "var(--gold)" }}>
+                    View seller's profile <ChevronRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                  </p>
                 </div>
               </Link>
               {sellerProfile && (
