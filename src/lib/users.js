@@ -22,6 +22,10 @@ export async function getUserProfile(uid) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+export async function setFoundingSeller(uid, value) {
+  await setDoc(doc(db, "users", uid), { foundingSeller: !!value }, { merge: true });
+}
+
 export async function incrementCompletedDeals(uid, delta) {
   await setDoc(doc(db, "users", uid), { completedDeals: increment(delta) }, { merge: true });
 }

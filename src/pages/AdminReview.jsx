@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2, Star, Search, Image, Trash2, Handshake } from "lucide-react";
+import { Check, X, MapPin, Clock, ShieldCheck, ArrowLeft, Loader2, Star, Search, Image, Trash2, Handshake, AlertTriangle, CheckSquare, Square, Award } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { ADMIN_EMAIL } from "../lib/admin.js";
 import { subscribePendingListings, approveListing, rejectListing, subscribeActiveListings, setBoosted } from "../lib/listings.js";
 import { subscribeBanners, createBanner, setBannerActive, deleteBanner } from "../lib/banners.js";
 import { subscribeAllConversationsForAdmin } from "../lib/messages.js";
 import { uploadImage } from "../lib/cloudinary.js";
+import { getUserProfile, setFoundingSeller } from "../lib/users.js";
+import { getRiskFlags } from "../lib/riskFlags.js";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 
 const REJECT_REASONS = ["Unclear photos", "Suspicious / scam wording", "Wrong category", "Prohibited item", "Duplicate listing"];
@@ -27,6 +29,10 @@ export default function AdminReview() {
   const [conversations, setConversations] = useState([]);
 
   const [queue, setQueue] = useState([]);
+  const [sellerProfiles, setSellerProfiles] = useState({});
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmBulkReject, setConfirmBulkReject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [rejectingId, setRejectingId] = useState(null);
@@ -67,6 +73,40 @@ export default function AdminReview() {
   }, [user]);
 
   useEffect(() => {
+    const uniqueSellerIds = [...new Set(queue.map((item) => item.sellerId))];
+    const missing = uniqueSellerIds.filter((id) => !sellerProfiles[id]);
+    if (missing.length === 0) return;
+    Promise.all(missing.map((id) => getUserProfile(id).then((p) => [id, p]))).then((pairs) => {
+      setSellerProfiles((prev) => {
+        const next = { ...prev };
+        pairs.forEach(([id, p]) => { next[id] = p; });
+        return next;
+      });
+    });
+  }, [queue]);
+
+  useEffect(() => {
+    const uniqueSellerIds = [...new Set(activeListings.map((item) => item.sellerId))];
+    const missing = uniqueSellerIds.filter((id) => !sellerProfiles[id]);
+    if (missing.length === 0) return;
+    Promise.all(missing.map((id) => getUserProfile(id).then((p) => [id, p]))).then((pairs) => {
+      setSellerProfiles((prev) => {
+        const next = { ...prev };
+        pairs.forEach(([id, p]) => { next[id] = p; });
+        return next;
+      });
+    });
+  }, [activeListings]);
+
+  const orderedQueue = useMemo(() => {
+    return [...queue].sort((a, b) => {
+      const aFounding = sellerProfiles[a.sellerId]?.foundingSeller ? 1 : 0;
+      const bFounding = sellerProfiles[b.sellerId]?.foundingSeller ? 1 : 0;
+      return bFounding - aFounding;
+    });
+  }, [queue, sellerProfiles]);
+
+  useEffect(() => {
     if (!user || user.email !== ADMIN_EMAIL || tab !== "boosts") return;
     const unsub = subscribeActiveListings(
       (list) => { setActiveListings(list); setActiveLoading(false); },
@@ -95,6 +135,39 @@ export default function AdminReview() {
     await rejectListing(id, reason);
     setRejectingId(null);
     setBusyId(null);
+  }
+
+  function toggleSelected(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => (prev.size === orderedQueue.length ? new Set() : new Set(orderedQueue.map((i) => i.id))));
+  }
+
+  async function handleBulkApprove() {
+    setBulkBusy(true);
+    await Promise.all([...selectedIds].map((id) => approveListing(id)));
+    setSelectedIds(new Set());
+    setBulkBusy(false);
+  }
+
+  async function handleBulkReject(reason) {
+    setBulkBusy(true);
+    await Promise.all([...selectedIds].map((id) => rejectListing(id, reason)));
+    setSelectedIds(new Set());
+    setBulkBusy(false);
+    setConfirmBulkReject(false);
+  }
+
+  async function handleToggleFoundingSeller(sellerId, current) {
+    await setFoundingSeller(sellerId, !current);
+    setSellerProfiles((prev) => ({ ...prev, [sellerId]: { ...prev[sellerId], foundingSeller: !current } }));
   }
 
   async function handleToggleBoost(id, current) {
@@ -219,53 +292,104 @@ export default function AdminReview() {
                   <p className="text-sm" style={{ color: "var(--muted)" }}>No listings waiting for review right now.</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-4">
-                  {queue.map((item) => (
-                    <div key={item.id} className="overflow-hidden rounded-2xl border" style={{ borderColor: "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
-                      <div className="flex flex-col gap-4 p-4 sm:flex-row">
-                        {item.photos?.[0] ? (
-                          <img src={item.photos[0]} alt={item.title} className="h-24 w-full shrink-0 rounded-xl object-cover sm:w-32" />
-                        ) : (
-                          <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl sm:w-32" style={{ background: "var(--surface-2)" }}>
-                            <span className="text-xs" style={{ color: "var(--muted)" }}>No photo</span>
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Link to={`/listing/${item.id}`} className="font-display text-sm font-semibold hover:underline">{item.title}</Link>
-                            <span className="rounded-full border px-2 py-0.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--muted)" }}>{item.category}</span>
-                          </div>
-                          <p className="mt-1 font-display text-sm font-semibold" style={{ color: "var(--gold)" }}>GH₵ {Number(item.price).toLocaleString()}</p>
-                          <p className="mt-1 flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
-                            <span className="flex items-center gap-1"><MapPin size={12} /> {item.location}</span>
-                            <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(item.createdAt)}</span>
-                            <span>by {item.sellerName}</span>
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 gap-2 sm:flex-col">
-                          <button onClick={() => handleApprove(item.id)} disabled={busyId === item.id} className="flex flex-1 items-center justify-center gap-1 rounded-full px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
-                            {busyId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />} Approve
-                          </button>
-                          <button onClick={() => setRejectingId(rejectingId === item.id ? null : item.id)} className="flex flex-1 items-center justify-center gap-1 rounded-full border px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ borderColor: "rgba(245,240,232,0.2)", color: "var(--muted)" }}>
-                            <X size={14} /> Reject
-                          </button>
-                        </div>
+                <div>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <button onClick={toggleSelectAll} className="flex items-center gap-2 text-xs" style={{ color: "var(--muted)" }}>
+                      {selectedIds.size === orderedQueue.length ? <CheckSquare size={15} style={{ color: "var(--gold)" }} /> : <Square size={15} />}
+                      {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+                    </button>
+                    {selectedIds.size > 0 && (
+                      <div className="flex gap-2">
+                        <button onClick={handleBulkApprove} disabled={bulkBusy} className="flex items-center gap-1 rounded-full px-4 py-2 font-display text-xs font-semibold" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                          {bulkBusy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Approve {selectedIds.size}
+                        </button>
+                        <button onClick={() => setConfirmBulkReject(true)} disabled={bulkBusy} className="flex items-center gap-1 rounded-full border px-4 py-2 font-display text-xs font-semibold" style={{ borderColor: "rgba(245,240,232,0.2)", color: "var(--muted)" }}>
+                          <X size={13} /> Reject {selectedIds.size}
+                        </button>
                       </div>
+                    )}
+                  </div>
 
-                      {rejectingId === item.id && (
-                        <div className="border-t p-4" style={{ borderColor: "rgba(245,240,232,0.08)", background: "var(--surface-2)" }}>
-                          <p className="mb-2 text-xs" style={{ color: "var(--muted)" }}>Reason for rejection (seller will see this):</p>
-                          <div className="flex flex-wrap gap-2">
-                            {REJECT_REASONS.map((reason) => (
-                              <button key={reason} onClick={() => handleReject(item.id, reason)} className="rounded-full border px-3 py-1.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--text)" }}>{reason}</button>
-                            ))}
+                  <div className="flex flex-col gap-4">
+                    {orderedQueue.map((item) => {
+                      const flags = getRiskFlags(item);
+                      const isFounding = sellerProfiles[item.sellerId]?.foundingSeller;
+                      return (
+                        <div key={item.id} className="overflow-hidden rounded-2xl border" style={{ borderColor: flags.length > 0 ? "rgba(200,80,80,0.4)" : isFounding ? "rgba(212,165,68,0.4)" : "rgba(245,240,232,0.1)", background: "var(--surface)" }}>
+                          <div className="flex flex-col gap-4 p-4 sm:flex-row">
+                            <button onClick={() => toggleSelected(item.id)} className="shrink-0 self-start pt-1">
+                              {selectedIds.has(item.id) ? <CheckSquare size={18} style={{ color: "var(--gold)" }} /> : <Square size={18} style={{ color: "var(--muted)" }} />}
+                            </button>
+                            {item.photos?.[0] ? (
+                              <img src={item.photos[0]} alt={item.title} className="h-24 w-full shrink-0 rounded-xl object-cover sm:w-32" />
+                            ) : (
+                              <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-xl sm:w-32" style={{ background: "var(--surface-2)" }}>
+                                <span className="text-xs" style={{ color: "var(--muted)" }}>No photo</span>
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Link to={`/listing/${item.id}`} className="font-display text-sm font-semibold hover:underline">{item.title}</Link>
+                                <span className="rounded-full border px-2 py-0.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--muted)" }}>{item.category}</span>
+                                {isFounding && (
+                                  <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium" style={{ background: "rgba(212,165,68,0.15)", color: "var(--gold)" }}>
+                                    <Award size={11} /> Founding Seller
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-1 font-display text-sm font-semibold" style={{ color: "var(--gold)" }}>GH₵ {Number(item.price).toLocaleString()}</p>
+                              <p className="mt-1 flex flex-wrap items-center gap-3 text-xs" style={{ color: "var(--muted)" }}>
+                                <span className="flex items-center gap-1"><MapPin size={12} /> {item.location}</span>
+                                <span className="flex items-center gap-1"><Clock size={12} /> {timeAgo(item.createdAt)}</span>
+                                <span>by {item.sellerName}</span>
+                              </p>
+                              {flags.length > 0 && (
+                                <div className="mt-2 flex flex-col gap-1">
+                                  {flags.map((flag) => (
+                                    <p key={flag} className="flex items-center gap-1 text-xs" style={{ color: "#D97066" }}>
+                                      <AlertTriangle size={12} /> {flag}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 gap-2 sm:flex-col">
+                              <button onClick={() => handleApprove(item.id)} disabled={busyId === item.id} className="flex flex-1 items-center justify-center gap-1 rounded-full px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ background: "var(--gold)", color: "#0F0E0C" }}>
+                                {busyId === item.id ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />} Approve
+                              </button>
+                              <button onClick={() => setRejectingId(rejectingId === item.id ? null : item.id)} className="flex flex-1 items-center justify-center gap-1 rounded-full border px-4 py-2 font-display text-xs font-semibold sm:flex-none" style={{ borderColor: "rgba(245,240,232,0.2)", color: "var(--muted)" }}>
+                                <X size={14} /> Reject
+                              </button>
+                            </div>
                           </div>
+
+                          {rejectingId === item.id && (
+                            <div className="border-t p-4" style={{ borderColor: "rgba(245,240,232,0.08)", background: "var(--surface-2)" }}>
+                              <p className="mb-2 text-xs" style={{ color: "var(--muted)" }}>Reason for rejection (seller will see this):</p>
+                              <div className="flex flex-wrap gap-2">
+                                {REJECT_REASONS.map((reason) => (
+                                  <button key={reason} onClick={() => handleReject(item.id, reason)} className="rounded-full border px-3 py-1.5 text-xs" style={{ borderColor: "rgba(245,240,232,0.14)", color: "var(--text)" }}>{reason}</button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
               )
+            )}
+
+            {confirmBulkReject && (
+              <ConfirmDialog
+                title={`Reject ${selectedIds.size} listings?`}
+                message="Each seller will see a generic rejection note. This can't be undone in bulk."
+                confirmLabel="Reject all"
+                danger
+                onConfirm={() => handleBulkReject("Rejected in bulk review")}
+                onCancel={() => setConfirmBulkReject(false)}
+              />
             )}
 
             {tab === "boosts" && (
@@ -299,6 +423,14 @@ export default function AdminReview() {
                           <Link to={`/listing/${item.id}`} className="font-display text-sm font-medium hover:underline">{item.title}</Link>
                           <p className="text-xs" style={{ color: "var(--muted)" }}>by {item.sellerName} · GH₵ {Number(item.price).toLocaleString()}</p>
                         </div>
+                        <button
+                          onClick={() => handleToggleFoundingSeller(item.sellerId, sellerProfiles[item.sellerId]?.foundingSeller)}
+                          className="flex shrink-0 items-center gap-1 rounded-full px-3 py-2 text-xs font-medium"
+                          style={sellerProfiles[item.sellerId]?.foundingSeller ? { background: "rgba(212,165,68,0.15)", color: "var(--gold)" } : { border: "1px solid rgba(245,240,232,0.2)", color: "var(--muted)" }}
+                        >
+                          <Award size={13} />
+                          {sellerProfiles[item.sellerId]?.foundingSeller ? "Founding" : "Mark founding"}
+                        </button>
                         <button
                           onClick={() => handleToggleBoost(item.id, item.boosted)}
                           disabled={boostBusyId === item.id}
